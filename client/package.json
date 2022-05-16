@@ -1,0 +1,38 @@
+{
+  "name": "delete-events-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "@auth0/auth0-spa-js": "^1.3.2",
+    "@fortawesome/fontawesome-free": "^6.1.1",
+    "axios": "^0.19.2",
+    "bootstrap-vue": "^2.22.0",
+    "bulma": "^0.8.0",
+    "core-js": "^3.3.2",
+    "cytoscape": "^3.21.1",
+    "cytoscape-dagre": "^2.4.0",
+    "jquery": "^3.6.0",
+    "vue": "^2.6.10",
+    "vue-json-tree": "^0.4.3",
+    "vue-multiselect": "^2.1.6",
+    "vue-router": "^3.1.3",
+    "vue-sidebar-menu": "^5.2.2"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "^4.0.0",
+    "@vue/cli-plugin-eslint": "^4.0.0",
+    "@vue/cli-plugin-router": "^4.0.0",
+    "@vue/cli-service": "^4.0.0",
+    "babel-eslint": "^10.0.3",
+    "eslint": "^5.16.0",
+    "eslint-plugin-vue": "^5.0.0",
+    "sass": "^1.19.0",
+    "sass-loader": "^8.0.0",
+    "vue-template-compiler": "^2.6.10"
+  }
+}
