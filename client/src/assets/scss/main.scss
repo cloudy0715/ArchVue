@@ -57,3 +57,33 @@
 }
 //
 
+/*Ovveride Navigator border and background:*/
+.cytoscape-navigator {
+  border: 2px solid #bebebe !important;
+  background: white !important;
+  height: 25vh !important;
+  width: 25vw !important;
+  margin-bottom: 24px;
+  margin-right: 24px;
+}
+
+/*Add border to View container:*/
+.cytoscape-navigator .cytoscape-navigatorView {
+  position: absolute;
+  z-index: 2;
+  border: 2px solid #124191;
+  background: transparent;
+}
+
+/*Ovveride overlay container when mouse is over Navigator*/
+.cytoscape-navigator:hover .cytoscape-navigatorOverlay {
+  border: 2px solid #124191;
+  background: transparent;
+}
+
+/*Ovveride view's container when mouse is over view*/
+.cytoscape-navigator.mouseover-view .cytoscape-navigatorView {
+  background-color: rgba(18, 65, 145, 0.3);
+}
+
+

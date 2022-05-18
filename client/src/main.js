@@ -15,6 +15,7 @@ import dagre from 'cytoscape-dagre';
 cytoscape.use( dagre );
 Vue.prototype.cytoscape = cytoscape
 
+
 // BootstrapVue
 import { BootstrapVue, BootstrapVueIcons } from 'bootstrap-vue'
 
