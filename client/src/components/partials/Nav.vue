@@ -2,7 +2,7 @@
 <nav class="navbar container" role="navigation" aria-label="main navigation">
   <div class="navbar-brand">
     <a class="navbar-item" href="/">
-      <strong class="is-size-4">Animal Rescue League</strong>
+      <strong class="is-size-4">ClouDay1 Architecture</strong>
     </a>
     <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
       <span aria-hidden="true"></span>
@@ -13,8 +13,8 @@
   <div id="navbar" class="navbar-menu">
     <div class="navbar-start">
       <router-link to="/" class="navbar-item">Home</router-link>
-      <router-link to="/about" class="navbar-item">About</router-link>
-      <router-link to="/arch" class="navbar-item">Arch</router-link>
+      <!-- <router-link to="/about" class="navbar-item">About</router-link> -->
+      <router-link to="/about" class="navbar-item">AWS</router-link>
     </div>
     <div class="navbar-end">
       <div class="navbar-item">

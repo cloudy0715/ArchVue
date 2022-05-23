@@ -208,31 +208,43 @@
       </div>
 
       <b-container fluid>
-        <b-col lg="6" class="my-1">
-          <b-form-group
-            label="Filter"
-            label-for="filter-input"
-            label-cols-sm="3"
-            label-align-sm="right"
-            label-size="sm"
-            class="mb-0"
-          >
-            <b-input-group size="sm">
-              <b-form-input
-                id="filter-input"
-                v-model="filter"
-                type="search"
-                placeholder="Type to Search"
-              ></b-form-input>
-
-              <b-input-group-append>
-                <b-button :disabled="!filter" @click="filter = ''"
-                  >Clear</b-button
+        <!-- User Interface controls -->
+        <b-row class="justify-content-between">
+          <b-col lg="4" class="my-1">
+            <b-form-group class="mb-0">
+              <b-input-group size="sm">
+                <b-input-group-prepend is-text class="align-items-stretch">
+                  <b-icon icon="search"></b-icon>
+                </b-input-group-prepend>
+                <b-form-input
+                  id="filter-input"
+                  v-model="filter"
+                  type="search"
+                  placeholder="Type to Search"
                 >
-              </b-input-group-append>
-            </b-input-group>
-          </b-form-group>
-        </b-col>
+                </b-form-input>
+
+                <b-input-group-append>
+                  <b-button :disabled="!filter" @click="filter = ''"
+                    >Clear</b-button
+                  >
+                </b-input-group-append>
+              </b-input-group>
+            </b-form-group>
+          </b-col>
+
+          <b-col sm="5" md="4" class="my-1">
+            <b-pagination
+              v-model="currentPage"
+              :total-rows="totalRows"
+              :per-page="perPage"
+              align="fill"
+              size="sm"
+              class="my-0"
+            ></b-pagination>
+          </b-col>
+        </b-row>
+
         <!-- Main table element -->
         <b-table
           :items="accountData"
@@ -240,31 +252,37 @@
           :current-page="currentPage"
           :per-page="perPage"
           :filter="filter"
-          :sort-by.sync="sortBy"
-          :sort-desc.sync="sortDesc"
-          :sort-direction="sortDirection"
           stacked="md"
+          :busy="isBusy"
           show-empty
+          @filtered="onFiltered"
         >
-          <template #cell(name)="row">
-            {{ row.value.first }} {{ row.value.last }}
+          <template #empty>
+            <div class="text-center my-3">
+              <b-spinner variant="primary" label="Spinning"></b-spinner>
+            </div>
           </template>
-
           <template #cell(actions)="row">
-            <!-- <b-button
-              size="sm"
-              @click="info(row.item, row.index, $event.target)"
-              class="mr-1"
-            >
-              Info modal
-            </b-button> -->
-            <b-button size="sm" @click="row.toggleDetails">
-              {{ row.detailsShowing ? "Hide" : "Show" }} Details
-            </b-button>
-            <b-button size="sm" @click="openArch(row.item.requestID)"> Open </b-button>
+            <div class="d-flex align-items-center justify-content-evenly">
+              <b-icon
+                icon="arrow-repeat"
+                class="repeat-icon"
+                @click="openArch(row.item)"
+              ></b-icon>
+              <b-icon
+                icon="box-arrow-up-right"
+                class="openArch-icon"
+                @click="openArch(row.item)"
+              ></b-icon>
+              <b-icon
+                icon="trash"
+                class="delete-icon"
+                @click="deleteArch(row.index, row.item.requestID)"
+              ></b-icon>
+            </div>
           </template>
 
-          <template #row-details="row">
+          <!-- <template #row-details="row">
             <b-card>
               <ul>
                 <li v-for="(value, key) in row.item" :key="key">
@@ -272,7 +290,7 @@
                 </li>
               </ul>
             </b-card>
-          </template>
+          </template> -->
         </b-table>
       </b-container>
     </div>
@@ -298,43 +316,14 @@ export default {
         // AccountName: "",
         user_id: "12345",
       },
-      accountData: [
-        // {
-        //   account_name: "clouday2",
-        //   data_name: "data-eb93df98-7b38-4f35-86e8-4975e4a99330.json",
-        //   user_id: "5555",
-        //   status: "COMPLETED",
-        //   timestamp: "2022-05-13 16:21:33.019353+08:00",
-        //   region: ["us-west-2"],
-        //   account_id: "758325631830",
-        //   requestID: "7f6ee7c4-16a7-46b0-ae54-d80da4108bcd",
-        // },
-        // {
-        //   account_name: "clouday2",
-        //   data_name: "data-2f31c9cb-7826-43bd-80a0-daf5670dfe10.json",
-        //   user_id: "5555",
-        //   status: "COMPLETED",
-        //   timestamp: "2022-05-13 15:43:22.170600+08:00",
-        //   region: ["us-west-2"],
-        //   account_id: "758325631830",
-        //   requestID: "704f3e18-55e3-4b5b-8ca1-a76e9fe1eaed",
-        // },
-        // {
-        //   account_name: "changeToTaiwanTime",
-        //   data_name: "data-2f31c9cb-7826-43bd-80a0-daf5670dfe10.json",
-        //   user_id: "5555",
-        //   status: "COMPLETED",
-        //   timestamp: "2022-05-13 15:26:05.729325+08:00",
-        //   region: ["us-west-2"],
-        //   account_id: "758325631830",
-        //   requestID: "13c91f8d-3667-4192-ab41-8cb5afbcafdd",
-        // },
-      ],
+      isBusy: true,
+      accountData: [],
       fields: [
         {
           key: "account_name",
           label: "Architecture Name",
           sortable: true,
+          stickyColumn: true,
           class: "text-center",
         },
         {
@@ -353,18 +342,8 @@ export default {
       ],
       totalRows: 1,
       currentPage: 1,
-      perPage: 5,
-      pageOptions: [5, 10, 15, { value: 100, text: "Show a lot" }],
-      sortBy: "",
-      sortDesc: false,
-      sortDirection: "asc",
+      perPage: 6,
       filter: null,
-      filterOn: [],
-      infoModal: {
-        id: "info-modal",
-        title: "",
-        content: "",
-      },
       //
       show: true,
       state: null,
@@ -492,16 +471,71 @@ export default {
     },
   },
   methods: {
-    //開啟新視窗並傳參，引數不能顯示在位址列裡面，不關閉視窗一直重新整理，引數一直有效
-    openArch(requestID) {
+    onFiltered(filteredItems) {
+      // Trigger pagination to update the number of buttons/pages due to filtering
+      this.totalRows = filteredItems.length;
+      this.currentPage = 1;
+    },
+    openArch(item) {
+      //開啟新視窗並傳參，引數不能顯示在位址列裡面，不關閉視窗一直重新整理，引數一直有效
       //主要實現開啟新視窗的功能
-      var route = this.$router.resolve({
+      const route = this.$router.resolve({
         name: "arch",
       });
+      const params = {
+        requestID: item.requestID,
+        archName: item.account_name,
+      };
       //主要實現儲存引數的功能
-      sessionStorage.setItem("requestID", requestID);
-
+      sessionStorage.setItem("item", JSON.stringify(params));
       window.open(route.href, "_blank");
+    },
+    deleteArch(index, requestID) {
+      try {
+        // this.loading = true
+        axios
+          .delete(
+            "https://hj47l47uptaqggfccy7jfoqqqy0apktb.lambda-url.us-west-2.on.aws/",
+            { params: { requestid: requestID } }
+          )
+          .then((res) => {
+            if (res.data.message == "Successfully deleted") {
+              this.accountData.splice(index, 1);
+              console.log(requestID, res.data);
+            } else {
+              alert("Try again.");
+            }
+          })
+          .catch((err) => {
+            alert("Try again.");
+
+            console.log(err);
+          });
+      } catch (e) {
+        this.errors.push(e);
+      }
+      // axios
+      //   .delete(
+      //     "https://hj47l47uptaqggfccy7jfoqqqy0apktb.lambda-url.us-west-2.on.aws/",
+      //     { params: { requestid: requestID },
+      //       headers: {
+      //               "Content-Type": "application/json",
+      //               "Access-Control-Allow-Origin": "*",
+      //               'Access-Control-Allow-Methods':'GET,PUT,POST,DELETE,PATCH,OPTIONS',
+      //           }
+      //     }
+      //   )
+      //   .then((res) => {
+      //     if (res.data.message == "Successfully deleted") {
+      //       this.accountData.splice(index, 1);
+      //     } else {
+      //       alert("Try again.");
+      //     }
+      //   })
+      //   .catch((err) => {
+      //       alert("Try again.");
+      //     console.log(err);
+      //   });
     },
     checkFormValidity() {
       const valid = this.$refs.formValid.checkValidity();
@@ -533,12 +567,7 @@ export default {
         return;
       }
       axios
-        .post("http://44.237.111.172/newPost", this.form, {
-          // headers: {
-          //   "Access-Control-Allow-Origin": "*",
-          //   "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS",
-          // }
-        })
+        .post("http://44.237.111.172/newPost", this.form, {})
         .then((res) => {
           console.log(res);
         })
@@ -560,15 +589,12 @@ export default {
     try {
       // this.loading = true
       axios
-        .get(ddbURL, { params: { user_id: "5555" } })
+        .get(ddbURL, { params: { user_id: "12345" } })
         .then((res) => {
-//           console.log(JSON.parse(res.data.message));
-// const text = '{"name":"John", "region":["us-west-2", "us-west-1"], "city":"New York"}';
-// const obj = JSON.parse(text);
-//           console.log(obj, "test");
-
           this.accountData = JSON.parse(res.data.message);
-          // console.log(this.accountData);
+          // Set the initial number of items
+          this.totalRows = this.accountData.length;
+          this.isBusy = false;
         })
         .catch((err) => {
           console.log(err);
@@ -583,6 +609,7 @@ export default {
 <style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
 
 <style lang="scss" scoped>
+
 .org-description {
   margin-top: 50px;
 }
@@ -622,6 +649,28 @@ hr {
     overflow-y: scroll;
     resize: none;
   }
+}
+
+.container .table td .b-icon {
+  cursor: pointer;
+  margin: 0 8px;
+  font-size: 20px;
+  &.openArch-icon {
+    color: rgb(9, 121, 186);
+    font-size: 18px;
+  }
+  &.repeat-icon {
+    color: rgb(12, 165, 24);
+  }
+  &.delete-icon {
+    color: rgb(239, 80, 80);
+  }
+}
+
+.b-icon:hover {
+  // background: rgb(233, 233, 233);
+  // border-radius: 50%;
+  animation: swing ease-in-out 0.5s 1 alternate
 }
 
 section .card-body {

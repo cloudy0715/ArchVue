@@ -1,43 +1,56 @@
 <template>
   <div id="box">
-    <main :class="{active: isLeftSidebarOpen}">
-      <b-button v-b-toggle.leftSidebar variant="outline-secondary" v-show=!isLeftSidebarOpen
-      ><b-icon icon="layout-sidebar-inset"></b-icon
-    ></b-button>
-    <div>
-      <b-dropdown id="dropdown-form" ref="dropdown" class="m-2">
-        <template #button-content>
-          <b-icon icon="filter-circle-fill" class="mr-1"></b-icon
-          ><span> Filter</span>
-        </template>
-        <b-dropdown-form class="filter-panel">
-          <small>Add an item to start your diagram.</small>
-          <b-dropdown-divider></b-dropdown-divider>
-          <div class="d-flex">
-            <b-form-select
-              v-model="filterType"
-              :options="filterOptions"
-            ></b-form-select>
-            <b-form-select
-              v-model="filterResult"
-              :options="filterVal"
-            ></b-form-select>
-            <b-button variant="info" @click="onClick" id="filterApply"
-              >Apply</b-button
-            >
-          </div>
-        </b-dropdown-form>
-      </b-dropdown>
-    </div>
-    <div class="mt-3">
-      Selected: <strong>{{ filterType }}{{ filterResult }}</strong>
-    </div>
-    <!-- <button @click="test">test</button> -->
-    <!-- <button id="test">test</button> -->
+    <main :class="{ active: isLeftSidebarOpen }">
+      <div class="d-flex">
+        <b-dropdown
+          id="dropdown-form"
+          ref="dropdown"
+          variant="info"
+          class="m-2"
+        >
+          <template #button-content>
+            <b-icon icon="filter-circle-fill" class="mr-1"></b-icon
+            ><span> Filter</span>
+          </template>
+          <b-dropdown-form class="filter-panel">
+            <small>Add an item to start your diagram.</small>
+            <b-dropdown-divider></b-dropdown-divider>
+            <div class="d-flex">
+              <b-form-select
+                v-model="filterType"
+                :options="filterOptions"
+              ></b-form-select>
+              <b-form-select
+                v-model="filterResult"
+                :options="filterVal"
+              ></b-form-select>
+              <b-button variant="success" @click="onClick" id="filterApply"
+                >Apply</b-button
+              >
+            </div>
+          </b-dropdown-form>
+        </b-dropdown>
+        <div class="mt-2">
+          <b-button v-b-modal.modal-1
+            ><b-icon icon="search"></b-icon> Cost</b-button
+          >
+          <b-modal id="modal-1" title="Cost">
+            <DoughnutChart />
+          </b-modal>
+        </div>
+        <b-button id="testStru">test</b-button>
+      </div>
+      <div class="mt-2 filter-result">
+        <p v-show="showFilterResult">
+          {{ filterTypeText }} : {{ filterValText }}
+        </p>
+      </div>
+      <!-- <button @click="test">test</button> -->
+      <!-- <button id="test">test</button> -->
 
-    <div class="loading" v-if="loading">Loading...</div>
-    <div id="cy" v-else></div>
-    <!-- <div v-for="(value, key) in nodes" :key="key">
+      <div class="loading" v-if="loading">Loading...</div>
+      <div id="cy" v-else></div>
+      <!-- <div v-for="(value, key) in nodes" :key="key">
       <span>{{ value.data }}--{{ key }}</span>
     </div> -->
     </main>
@@ -58,10 +71,15 @@
         <json-tree :data="newTargetObj"></json-tree>
       </div>
     </b-sidebar>
+    <div class="close-sidebar" v-show="!isLeftSidebarOpen">
+      <b-button v-b-toggle.leftSidebar
+        ><b-icon icon="layout-sidebar-inset"></b-icon
+      ></b-button>
+    </div>
     <b-sidebar
       id="leftSidebar"
       class="leftSidebar-menu"
-      width="280px"
+      width="250px"
       shadow
       v-model="isLeftSidebarOpen"
       bg-variant="dark"
@@ -69,6 +87,7 @@
     >
       <div class="px-3 py-2">
         <div>
+          <h3 class="py-2 sidebar-title">{{ archName }}</h3>
           <p class="fw-bold">Accounts</p>
           <ul class="px-2">
             <li v-for="result in ResourceAccountID" :key="result">
@@ -105,75 +124,27 @@ import axios from "axios";
 import JsonTree from "vue-json-tree";
 import Multiselect from "vue-multiselect";
 import "cytoscape-navigator/cytoscape.js-navigator.css";
-var navigator = require('cytoscape-navigator');
+import DoughnutChart from "@/components/chart.vue";
 
-navigator( cytoscape ); // register extension
+var navigator = require("cytoscape-navigator");
+
+navigator(cytoscape); // register extension
 /*eslint-disable*/
 
 export default {
   name: "cytoscape",
   components: {
     JsonTree,
+    DoughnutChart,
     // Multiselect
   },
   data() {
     return {
       nodes: [],
       edges: [],
-      // nodes: [
-      //   {
-      //     data: {
-      //       id: "n0",
-      //     },
-      //   },
-      //   {
-      //     data: {
-      //       id: "n1",
-      //     },
-      //   },
-      //   {
-      //     data: {
-      //       id: "n2",
-      //     },
-      //   },
-      //   {
-      //     data: {
-      //       id: "n3",
-      //     },
-      //   },
-      // ],
-      // edges: [
-      //   {
-      //     data: {
-      //       source: "n2",
-      //       target: "n1",
-      //     },
-      //   },
-      //   {
-      //     data: {
-      //       source: "n2",
-      //       target: "n3",
-      //     },
-      //   },
-      //   {
-      //     data: {
-      //       source: "n2",
-      //       target: "n0",
-      //     },
-      //   },
-      //   {
-      //     data: {
-      //       source: "n1",
-      //       target: "n0",
-      //     },
-      //   },
-      //   {
-      //     data: {
-      //       source: "n0",
-      //       target: "n1",
-      //     },
-      //   },
-      // ],
+      requestID: "",
+      archName: "",
+      showFilterResult: false,
       loading: false,
       newTargetObj: {},
       filterOpt: ["id", "url", "parent", "type"],
@@ -191,7 +162,7 @@ export default {
           label: "Tag",
           options: [
             { value: "tag.Application", text: "Application" },
-            { value: "tag.Department", text: "Application" },
+            { value: "tag.Department", text: "Department" },
             { value: "tag.Environment", text: "Environment" },
             { value: "tag.Owner", text: "Owner" },
             { value: "tag.Project", text: "Project" },
@@ -199,7 +170,9 @@ export default {
         },
       ],
       filterType: null,
-      filterVal: [],
+      filterVal: null,
+      filterTypeText: null,
+      filterValText: null,
       filterResult: "",
       tag: {
         Application: ["Processing", "web"],
@@ -211,8 +184,8 @@ export default {
     };
   },
   watch: {
-
     filterType: function () {
+      this.filterResult = null;
       // console.log("test");
       switch (this.filterType) {
         case "region":
@@ -242,6 +215,8 @@ export default {
   methods: {
     onClick() {
       // Close the menu and (by passing true) return focus to the toggle button
+      this.filterTypeText = this.filterType;
+      this.filterValText = this.filterResult;
       this.$refs.dropdown.hide(true);
     },
     //     test(cy) {
@@ -250,11 +225,6 @@ export default {
     //  console.log( ele.id() );
     // });
     //     },
-    add() {
-      // this.newTargetObj = { title: "DynamoDB", url: "https://audio-json.s3.us-west-2.amazonaws.com/img/Arch_Amazon-DynamoDB_32.png" }
-      console.log("test", this.newTargetObj);
-      console.log("testnode", this.targetNode);
-    },
     ListIncludeResourceType() {
       var set = [];
       for (var i = 0; i < this.nodes.length; i++) {
@@ -382,7 +352,6 @@ export default {
         }, // a function that applies a transform to the final node position
 
         stop: function () {}, // on layoutstop
-        ready: function () {},
       };
       var cy = cytoscape({
         container: document.getElementById("cy"),
@@ -397,9 +366,7 @@ export default {
         autounselectify: true,
 
         elements: {
-          //节点数据
           nodes: this.nodes,
-          //
           edges: this.edges,
         },
 
@@ -415,7 +382,7 @@ export default {
               //   return node.data("type") + "\n" + node.data("name");
               // },
               content: function (node) {
-                if (node.data("arn")) return node.data("arn");
+                if (node.data("name")) return node.data("name");
                 else return node.data("id");
               },
               "text-valign": "top",
@@ -444,7 +411,7 @@ export default {
                 if (node.data("type") == "Account") return "#000";
                 else return "#be0e8d";
               },
-              "text-margin-x": 300,
+              "text-margin-x": 20,
               "text-margin-y": -15,
               "font-size": "22px",
               "font-weight": 700,
@@ -458,6 +425,12 @@ export default {
               "background-position-x": "0",
               "background-position-y": "0",
               "background-fit": "none",
+            },
+          },
+          {
+            selector: ".hidden",
+            css: {
+              display: "none",
             },
           },
           {
@@ -529,62 +502,263 @@ export default {
             },
           },
         ],
+        ready: function () {
+          cy = this;
+          cy.filter("node[label = 'parent']").data("isShow", false)
+          cy.filter("node[label = 'parent'][!isShow]").addClass("hidden")
+          // cy.add([
+          //   {
+          //     data: {
+          //       type: "region",
+          //       id: "us-west-1",
+          //       region: "us-west-1",
+          //       label: "parent"
+          //     },
+          //     data: {
+          //       type: "tag",
+          //       id: "tag.Application",
+          //       region: "us-west-1",
+          //       label: "parent"
+          //     },
+          //     data: {
+          //       type: "tag.Application",
+          //       id: "Processing",
+          //       region: "us-west-1",
+          //       label: "parent"
+          //     },
+          //     data: {
+          //       type: "tag.Application",
+          //       id: "web",
+          //       region: "us-west-1",
+          //       label: "parent"
+          //     },
+          //   },
+          // ]);
+          // cy.nodes("[id = 'Processing']").removeClass("hidden")
+          
+        },
       });
 
-      var parentNodes = cy.nodes(":parent");
-      parentNodes
-        .descendants()
-        .layout({
-          name: "grid",
-          cols: 2,
-        })
-        .run();
+      // function runLayout(fit, callBack) {
+      //   // step-1 position child nodes
+      //   var parentNodes = cy.nodes(':parent');
+      //   var orphansNodes = cy.nodes().orphans();
+      //   var grid_layout = orphansNodes.layout({
+      //     name: 'grid',
+      //       col: 1,
+      //       fit: fit
+      //   });
+      //   grid_layout.promiseOn('layoutstop').then(function(event) {
+      //     // step-2 position parent nodes
+      //     var dagre_layout = parentNodes.layout({
+      //       name: 'dagre',
+      //       rankDir: 'TB',
+      //       fit: fit
+      //     });
+      //     dagre_layout.promiseOn('layoutstop').then(function(event) {
+      //       if (callBack) {
+      //         callBack.call(cy, event);
+      //       }
+      //     });
+      //     dagre_layout.run();
+      //   });
+      //   grid_layout.run();
+
+      // }
+      // runLayout(true);
 
       var clone = cy.elements();
+let collection = cy.collection();
+$("#testStru").click(function () {
+  cy.nodes().map(function (ele) {
+  ["Processing", "web"].forEach((value) => {
+    ele.nodes(`[id = '${value}']`).data("isShow", true).removeClass("hidden")
+    if (ele.data(`tag.Application`) == value) {
+      collection = ele.union(ele.successors());
+      collection.filter("node[^parent]").move({
+          parent: value
+      });
+    } 
+  })
+})
+console.log(cy.nodes("[label='parent'][?isShow]"))
+cy.layout(layout).run()
+})
+
+
 
       $("#filterApply").click(function () {
+        _this.showFilterResult = true;
         cy.elements().remove();
         cy.add(clone);
-
         const query = `node[ ${_this.filterType} = '${_this.filterResult}']`;
+        const queryRegion = cy.filter(function (element, i) {
+          return element.isOrphan() && cy.nodes(query);
+        });
 
         let filteredNodes = cy.nodes(query);
 
-        // I only want to successors of all Nodes, so I add only those and combine nodes and edges with union
-        const graphElements = filteredNodes.union(filteredNodes.successors());
-        // Apply changes on graph
-        cy.elements().remove();
-        // console.log(graphElements)
-        cy.add(graphElements).layout(layout).run();
-        // layout(layout).run();
+        if (_this.filterResult == null) {
+          let graphElements = cy
+            .filter(`node[?${_this.filterType}]`)
+            .union(cy.filter(`node[?${_this.filterType}]`).successors());
+          // cy.filter(`node[!${_this.filterType}]`).addClass("hidden")
+          // // Apply changes on graph
+          cy.elements().remove();
+          // // console.log(graphElements)
+          cy.add(graphElements).layout(layout).run();
+          _this.filterVal.map(function (value) {
+            cy.add({
+              data: {
+                type: _this.filterType,
+                id: value,
+                label: "parent",
+              }
+            });
+          });
+          // cy.add([
+          //   {
+          //     data: {
+          //       type: "tag.Application",
+          //       id: "Processing",
+          //       region: "us-west-1",
+          //       label: "parent",
+          //     },
+          //   },
+          //   {
+          //     data: {
+          //       type: "tag.Application",
+          //       id: "web",
+          //       region: "us-west-1",
+          //       label: "parent",
+          //     },
+          //   },
+          // ]);
+
+          // let querytest = cy.filter(function (element, i) {
+          // return element.isChild() && element.data(`${_this.filterType}`) == "Processing";
+          // });
+          // console.log(querytest)
+          // querytest.move({
+          //     parent: "Processing"
+          //   })
+
+          let collection = cy.collection();
+cy.nodes().map(function (ele) {
+  _this.filterVal.forEach((value) => {
+    if (ele.data(`${_this.filterType}`) == value) {
+      collection = ele.union(ele.successors());
+      collection.filter("node[^parent]").move({
+          parent: value
+      });
+    } 
+  })
+})
+          // cy.nodes().map(function (ele) {
+          //   if (ele.data(`${_this.filterType}`) == "Processing") {
+          //     collection = ele.union(ele.successors());
+          //     collection.filter("node[^parent]").move({
+          //       parent: "Processing",
+          //     });
+          //     // collection.forEach(function(e){
+          //     //   console.log("collect", e.data("name"))
+          //     // })
+          //     console.log(ele.data("name"), ele.data("parent"));
+          //     console.log(collection.filter("node[parent]"));
+          //     console.log("=======");
+          //   } else if (ele.data(`${_this.filterType}`) == "web") {
+          //     ele.move({
+          //       parent: "web",
+          //     });
+          //   }
+          // });
+
+          // collection1.isOrphan().move({
+          //       parent: "web",
+          //     });
+          // cy.nodes().forEach(function (ele) {
+          //   // console.log(ele.data("name"),ele.data(`${_this.filterType}`),ele.isOrphan())
+          //   if (ele.data(`${_this.filterType}`) == "Processing") {
+          //     // console.log(ele.union(ele.successors()));
+          //     ele.union(ele.successors()).isOrphan().move({
+          //       parent: "web",
+          //     });
+          //   }
+          // });
+
+          //  graphElements = cy.filter(function (element, i) {
+          //   return element.isOrphan() && cy.nodes(`${_this.filterType} = Processing`);
+          // });
+          // graphElements.filter(`node[${_this.filterType} = Processing]`)
+          // cy.nodes("[id = 'Processing']").restore()
+
+          //  querygraphElements.move({
+          //     parent: "Processing"
+          //   })
+        } else {
+          // I only want to successors of all Nodes, so I add only those and combine nodes and edges with union
+          const graphElements = filteredNodes.union(filteredNodes.successors());
+
+          //   // Apply changes on graph
+          cy.elements().remove();
+          //   // console.log(graphElements)
+          cy.add(graphElements).layout(layout).run();
+        }
+
+        // if (_this.filterResult == "us-west-2") {
+        //   cy.add([
+        //     {
+        //       data: {
+        //         type: "region",
+        //         id: "us-west-1",
+        //         region: "us-west-1",
+        //       },
+        //     },
+        //   ]);
+        //   queryRegion.move({
+        //     parent: "us-west-1",
+        //   });
+        //   const graphElements = filteredNodes.union(filteredNodes.successors());
+        //   // Apply changes on graph
+        //   cy.elements().remove();
+        //   // console.log(graphElements)
+        //   cy.add(graphElements).layout(layout).run();
+        // } else {
+        //   // I only want to successors of all Nodes, so I add only those and combine nodes and edges with union
+        //   const graphElements = cy.filter('node[?tag]').union(cy.filter('node[?tag]').successors());
+        //   // Apply changes on graph
+        //   cy.elements().remove();
+        //   // console.log(graphElements)
+        //   cy.add(graphElements).layout(layout).run();
+        // }
       });
 
-      let nodeList = cy.nodes().orphans();
-      const query2 = 'node[region = "us-west-2"]';
-      const query3 = 'node[region = "us-west-1"]';
-      const tagquery = 'node[tag.Project = "Clouday1"]';
+      // let nodeList = cy.nodes().orphans();
+      // const query2 = 'node[region = "us-west-2"]';
+      // const query3 = 'node[region = "us-west-1"]';
+      // const tagquery = 'node[tag.Project = "Clouday1"]';
 
-      cy.add([
-        {
-          data: {
-            type: "region",
-            id: "us-west-2",
-            region: "us-west-2",
-          },
-        },
-      ]);
-      let filteredNodes2 = cy.nodes(query2);
-      let filteredNodes3 = cy.nodes(query3);
-      let filteredNodes4 = cy.nodes(tagquery);
+      // cy.add([
+      //   {
+      //     data: {
+      //       type: "region",
+      //       id: "us-west-2",
+      //       region: "us-west-2",
+      //     },
+      //   },
+      // ]);
+      // let filteredNodes2 = cy.nodes(query2);
+      // let filteredNodes3 = cy.nodes(query3);
+      // let filteredNodes4 = cy.nodes(tagquery);
 
-      if (nodeList) {
-        filteredNodes3.orphans().move({
-          parent: "us-west-1",
-        });
-        filteredNodes2.orphans().move({
-          parent: "us-west-2",
-        });
-      }
+      // if (nodeList) {
+      //   filteredNodes3.orphans().move({
+      //     parent: "us-west-1",
+      //   });
+      //   filteredNodes2.orphans().move({
+      //     parent: "us-west-2",
+      //   });
+      // }
 
       // const graphElements = cy.nodes().union(cy.nodes().successors());
       // const graphElements = filteredNodes3.union(filteredNodes3.successors());
@@ -648,16 +822,23 @@ export default {
     },
   },
   async mounted() {
-    alert(sessionStorage.getItem("requestID"));
+    let params = JSON.parse(sessionStorage.getItem("item"));
+    this.requestID = params.requestID;
+    this.archName = params.archName;
+
     let _this = this;
     const dataURL =
       "https://o6q2hh5nkpdfq4qmzh2s7vexqi0aovau.lambda-url.us-west-2.on.aws/";
+    // "https://3qgd653iwxosnngnisli7ybxrq0xqqgt.lambda-url.us-west-2.on.aws/";
     try {
       // this.loading = true
       await axios
-        .get(dataURL)
+        .get(dataURL, { params: { requestid: this.requestID } })
         .then((res) => {
-          // console.log(res.data[0])
+          // console.log(JSON.parse(res.data.message))
+          // var JSONdata = JSON.parse(res.data.message)
+          // this.nodes = JSONdata[0];
+          // this.edges = JSONdata[1];
           this.nodes = res.data[0];
           this.edges = res.data[1];
         })
@@ -679,10 +860,14 @@ export default {
 </script>
 
 <style lang="scss">
+.navbar {
+  display: none;
+}
+
 #cy {
   max-width: 100%;
   /* height: 75%; */
-  height: 400px;
+  height: 450px;
   border: 2px solid #a1a1a1;
   border-radius: 5px;
   color: #cccccc;
@@ -703,13 +888,33 @@ h1 {
 
 main {
   transition: all 0.3s ease;
+  margin-left: 50px;
+  padding: 8px 8px 0;
   &.active {
-    margin-left: 280px;
+    margin-left: 250px;
+  }
+}
+
+.close-sidebar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50px;
+  height: 100%;
+  background: #343a40;
+  transition: all 0.3s ease;
+  button,
+  button:hover {
+    background: transparent;
+    border: 0;
+    .b-icon {
+      color: rgb(235, 235, 235);
+    }
   }
 }
 
 .leftSidebar-menu {
-  background: #000 !important;
+  // background: #000 !important;
   li {
     font-size: 14px;
     color: rgba(255, 255, 255, 0.7);
@@ -731,6 +936,13 @@ main {
   }
 }
 
+.filter-result {
+  margin-left: 15px;
+  font-weight: bold;
+  color: #818181;
+}
 
-
+.sidebar-title {
+  color: rgba(255, 255, 255, 0.228);
+}
 </style>
