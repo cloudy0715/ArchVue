@@ -13,7 +13,14 @@
             ><span> Filter</span>
           </template>
           <b-dropdown-form class="filter-panel">
-            <small>Add an item to start your diagram.</small>
+            <div class="d-flex justify-content-between">
+              <small>Add an item to start your diagram.</small>
+              <b-icon
+                icon="trash"
+                class="delete-icon"
+                id="resetFilter"
+              ></b-icon>
+            </div>
             <b-dropdown-divider></b-dropdown-divider>
             <div class="d-flex">
               <b-form-select
@@ -181,6 +188,7 @@ export default {
         Owner: ["Front-end", "Back-end"],
         Project: ["Clouday1"],
       },
+      cyElements: null,
     };
   },
   watch: {
@@ -402,14 +410,23 @@ export default {
           {
             selector: ":parent",
             style: {
-              width: 2,
+              // width: 4,
+              shape: "roundrectangle",
+              "border-width": "5px",
+              "border-radius": "20%",
               "text-valign": "top",
               "text-halign": "left",
               "background-color": "#fff",
               // "border-color": "#be0e8d",
               "border-color": function (node) {
-                if (node.data("type") == "Account") return "#000";
-                else return "#be0e8d";
+                const type = node.data("type");
+                return type == "account_id"
+                  ? "#000"
+                  : type == "region"
+                  ? "#11789a"
+                  : type.includes("tag.")
+                  ? "#f1860b"
+                  : "#be0e8d";
               },
               "text-margin-x": 20,
               "text-margin-y": -15,
@@ -417,10 +434,20 @@ export default {
               "font-weight": 700,
               padding: "35px",
               content: function (node) {
-                if (node.data("type") == "Account")
-                  return `${node.data("type")} (${node.data("name")})`;
-                else if (node.data("type") == "region") return node.data("id");
-                else return node.data("id");
+                const type = node.data("type");
+                const id = node.data("id");
+                return type == "account_id"
+                  ? `Account (${id})`
+                  : type == "region"
+                  ? `Region (${id})`
+                  : type.includes("tag.")
+                  ? `${type.replace(/^./, type[0].toUpperCase())} (${id})`
+                  : node.data("name");
+                // if (node.data("type") == "account_id")
+                //   return `Account (${node.data("id")})`;
+                // else if (node.data("type") == "region" || node.data("type").includes("tag."))
+                //   return node.data("id");
+                // else return node.data("name");
               },
               "background-position-x": "0",
               "background-position-y": "0",
@@ -459,7 +486,8 @@ export default {
             selector: "node.highlight",
             style: {
               "border-color": "rgb(96, 178, 240)",
-              "border-width": "2px",
+              "border-width": "4px",
+              opacity: "1",
               // height: "52px",
               // width: "52px",
             },
@@ -468,14 +496,27 @@ export default {
             selector: "node.clickstyle",
             style: {
               "border-color": "rgb(96, 178, 240)",
-              "border-width": "3px",
+              "border-width": "4px",
               // height: "52px",
               // width: "52px",
             },
           },
           {
+            selector: "node.notfilter",
+            style: {
+              opacity: "0.5",
+            },
+          },
+          {
+            selector: "node.fitfilter",
+            style: {
+              width: "60px",
+              height: "60px",
+            },
+          },
+          {
             selector: "node.semitransp",
-            style: { opacity: "1" },
+            style: { opacity: "0.5" },
           },
           {
             selector: "edge.highlight",
@@ -504,38 +545,31 @@ export default {
         ],
         ready: function () {
           cy = this;
-          cy.filter("node[label = 'parent']").data("isShow", false)
-          cy.filter("node[label = 'parent'][!isShow]").addClass("hidden")
+          
+          // _this.cyElements = cy.nodes();
           // cy.add([
           //   {
           //     data: {
-          //       type: "region",
-          //       id: "us-west-1",
-          //       region: "us-west-1",
-          //       label: "parent"
-          //     },
-          //     data: {
           //       type: "tag",
-          //       id: "tag.Application",
-          //       region: "us-west-1",
-          //       label: "parent"
+          //       id: "Back-end",
+          //       label: "parent",
           //     },
+          //   },
+          //   {
           //     data: {
-          //       type: "tag.Application",
-          //       id: "Processing",
-          //       region: "us-west-1",
-          //       label: "parent"
-          //     },
-          //     data: {
-          //       type: "tag.Application",
-          //       id: "web",
-          //       region: "us-west-1",
-          //       label: "parent"
+          //       type: "tag.Owner",
+          //       id: "Front-end",
+          //       label: "parent",
           //     },
           //   },
           // ]);
+          cy.filter("node[label = 'parent']").data("isShow", false);
+          // cy.nodes().move({
+          //   parent: "Back-end"
+          // })
+          cy.filter("node[label = 'parent'][!isShow]").addClass("hidden");
+
           // cy.nodes("[id = 'Processing']").removeClass("hidden")
-          
         },
       });
 
@@ -567,27 +601,105 @@ export default {
       // }
       // runLayout(true);
 
-      var clone = cy.elements();
-let collection = cy.collection();
-$("#testStru").click(function () {
-  cy.nodes().map(function (ele) {
-  ["Processing", "web"].forEach((value) => {
-    ele.nodes(`[id = '${value}']`).data("isShow", true).removeClass("hidden")
-    if (ele.data(`tag.Application`) == value) {
-      collection = ele.union(ele.successors());
-      collection.filter("node[^parent]").move({
-          parent: value
+      const clone = cy.elements();
+
+      $("#testStru").click(function () {
+        let collection = cy.collection();
+        cy.add([
+          {
+            data: {
+              type: "tag.Application",
+              id: "Processing",
+              label: "parent",
+            },
+          },
+          {
+            data: {
+              type: "tag.Application",
+              id: "web",
+              label: "parent",
+            },
+          },
+        ]);
+// test-start
+
+          // cy.add(graphElements).layout(layout).run();
+          cy.nodes().map(function (ele) {
+            ["Processing", "web"].forEach((value) => {
+              if (ele.data(`tag.Application`) == value) {
+                collection = ele.union(ele.successors());
+                collection.filter("node[^parent]").move({
+                  parent: value,
+                });
+              }
+            });
+          });
+// test-end
+
+
+        // cy.nodes().map(function (ele) {
+        //   ["Processing", "web"].forEach((value) => {
+        //     // clone
+        //     //   .nodes(`[id = '${value}']`)
+        //     //   .data("isShow", true)
+        //     //   .removeClass("hidden");
+        //     // console.log(ele.nodes(`#${value}`))
+        //     // if (ele.nodes(`#${value}`) == undefined) {
+        //     //     cy.add({
+        //     //       data: {
+        //     //         type: "tag.Application",
+        //     //         id: value,
+        //     //         label: "parent",
+        //     //       },
+        //     //     });
+        //     //   }
+        //     if (ele.data(`tag.Application`) == value) {
+        //       collection = ele.union(ele.successors());
+        //       collection.filter("node[^parent]").move({
+        //         parent: value,
+        //       });
+        //       // console.log("correct",ele.data(`id = '${value}'`) ,ele.nodes(`id = '${value}'`).hidden(), ele.data("parent"))
+        //     } else {
+        //       // ele.nodes().addClass("hidden")
+        //       // console.log(ele.data("name"), ele.data("tag.Application"));
+        //     }
+        //   });
+
+        //   // ["Front-end", "Back-end"].forEach((value) => {
+        //   //   ele
+        //   //     .nodes(`[id = '${value}']`)
+        //   //     .data("isShow", true)
+        //   //     .removeClass("hidden");
+        //   //   if (ele.data(`tag.Owner`) == value) {
+        //   //     collection = ele.union(ele.successors());
+        //   //     collection.filter("node[^parent]").move({
+        //   //       parent: value,
+        //   //     });
+        //   //   }
+        //   // });
+        // });
+        // cy.elements().remove()
+        // console.log(cy.nodes("[label='parent'][?isShow]"))
+        cy.layout(layout).run();
       });
-    } 
-  })
-})
-console.log(cy.nodes("[label='parent'][?isShow]"))
-cy.layout(layout).run()
-})
 
-
+      $("#resetFilter").click(function () {
+         cy.json({
+            elements: {
+              nodes: _this.nodes,
+              edges: _this.edges,
+            }
+        });
+        cy.nodes().removeClass("notfilter");
+        // console.log(_this.nodes)
+        // cy.elements().remove();
+        // cy.add(clone).layout(layout).run();
+        // cy.ready();
+        cy.layout(layout).run();
+      });
 
       $("#filterApply").click(function () {
+        cy.nodes().removeClass("notfilter");
         _this.showFilterResult = true;
         cy.elements().remove();
         cy.add(clone);
@@ -599,7 +711,7 @@ cy.layout(layout).run()
         let filteredNodes = cy.nodes(query);
 
         if (_this.filterResult == null) {
-          let graphElements = cy
+          const graphElements = cy
             .filter(`node[?${_this.filterType}]`)
             .union(cy.filter(`node[?${_this.filterType}]`).successors());
           // cy.filter(`node[!${_this.filterType}]`).addClass("hidden")
@@ -613,7 +725,7 @@ cy.layout(layout).run()
                 type: _this.filterType,
                 id: value,
                 label: "parent",
-              }
+              },
             });
           });
           // cy.add([
@@ -643,17 +755,26 @@ cy.layout(layout).run()
           //     parent: "Processing"
           //   })
 
-          let collection = cy.collection();
-cy.nodes().map(function (ele) {
-  _this.filterVal.forEach((value) => {
-    if (ele.data(`${_this.filterType}`) == value) {
-      collection = ele.union(ele.successors());
-      collection.filter("node[^parent]").move({
-          parent: value
-      });
-    } 
-  })
-})
+          let collection1 = cy.collection();
+          cy.nodes().map(function (ele) {
+            _this.filterVal.forEach((value) => {
+              if (ele.data(`${_this.filterType}`) == value) {
+                collection1 = ele.union(ele.successors());
+                collection1.filter("node[^parent]").move({
+                  parent: value,
+                });
+              }
+            });
+          });
+          const fitQueryElements = cy
+            .filter(`node[?${_this.filterType}]`)
+            .union(cy.filter(`node[?${_this.filterType}]`).parent());
+          // fitQueryElements.map(function (ele) {
+          //   console.log(ele.data("name"));
+          // });
+          cy.nodes("[?parent]")
+            .difference(fitQueryElements)
+            .addClass("notfilter");
           // cy.nodes().map(function (ele) {
           //   if (ele.data(`${_this.filterType}`) == "Processing") {
           //     collection = ele.union(ele.successors());
@@ -698,11 +819,13 @@ cy.nodes().map(function (ele) {
         } else {
           // I only want to successors of all Nodes, so I add only those and combine nodes and edges with union
           const graphElements = filteredNodes.union(filteredNodes.successors());
+          const fitQueryElements = filteredNodes.union(filteredNodes.parent());
 
           //   // Apply changes on graph
           cy.elements().remove();
           //   // console.log(graphElements)
           cy.add(graphElements).layout(layout).run();
+          cy.nodes().difference(fitQueryElements).addClass("notfilter");
         }
 
         // if (_this.filterResult == "us-west-2") {
@@ -771,16 +894,16 @@ cy.nodes().map(function (ele) {
 
       cy.on("mouseover", "node", function (e) {
         var sel = e.target;
-        cy.elements()
-          .difference(sel.outgoers())
-          .not(sel)
-          .addClass("semitransp");
+        // cy.elements()
+        //   .difference(sel.outgoers())
+        //   .not(sel)
+        //   .addClass("semitransp");
         sel.addClass("highlight").outgoers().addClass("highlight");
       });
 
       cy.on("mouseout", "node", function (e) {
         var sel = e.target;
-        cy.elements().removeClass("semitransp");
+        // cy.elements().removeClass("semitransp");
         sel.removeClass("highlight").outgoers().removeClass("highlight");
       });
 
@@ -911,6 +1034,10 @@ main {
       color: rgb(235, 235, 235);
     }
   }
+}
+
+.b-icon.delete-icon {
+  font-size: 20px;
 }
 
 .leftSidebar-menu {

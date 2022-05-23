@@ -514,28 +514,6 @@ export default {
       } catch (e) {
         this.errors.push(e);
       }
-      // axios
-      //   .delete(
-      //     "https://hj47l47uptaqggfccy7jfoqqqy0apktb.lambda-url.us-west-2.on.aws/",
-      //     { params: { requestid: requestID },
-      //       headers: {
-      //               "Content-Type": "application/json",
-      //               "Access-Control-Allow-Origin": "*",
-      //               'Access-Control-Allow-Methods':'GET,PUT,POST,DELETE,PATCH,OPTIONS',
-      //           }
-      //     }
-      //   )
-      //   .then((res) => {
-      //     if (res.data.message == "Successfully deleted") {
-      //       this.accountData.splice(index, 1);
-      //     } else {
-      //       alert("Try again.");
-      //     }
-      //   })
-      //   .catch((err) => {
-      //       alert("Try again.");
-      //     console.log(err);
-      //   });
     },
     checkFormValidity() {
       const valid = this.$refs.formValid.checkValidity();
@@ -656,21 +634,8 @@ hr {
   margin: 0 8px;
   font-size: 20px;
   &.openArch-icon {
-    color: rgb(9, 121, 186);
     font-size: 18px;
   }
-  &.repeat-icon {
-    color: rgb(12, 165, 24);
-  }
-  &.delete-icon {
-    color: rgb(239, 80, 80);
-  }
-}
-
-.b-icon:hover {
-  // background: rgb(233, 233, 233);
-  // border-radius: 50%;
-  animation: swing ease-in-out 0.5s 1 alternate
 }
 
 section .card-body {
