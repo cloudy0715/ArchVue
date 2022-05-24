@@ -267,7 +267,7 @@
               <b-icon
                 icon="arrow-repeat"
                 class="repeat-icon"
-                @click="openArch(row.item)"
+                @click="updateArch(row.item, row.item.requestID)"
               ></b-icon>
               <b-icon
                 icon="box-arrow-up-right"
@@ -476,6 +476,17 @@ export default {
       this.totalRows = filteredItems.length;
       this.currentPage = 1;
     },
+    updateArch(item, requestID) {
+          console.log(item);
+      axios
+        .post("http://44.237.111.172/update", { requestID: requestID})
+        .then((res) => {
+          console.log(res);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    },
     openArch(item) {
       //開啟新視窗並傳參，引數不能顯示在位址列裡面，不關閉視窗一直重新整理，引數一直有效
       //主要實現開啟新視窗的功能
@@ -630,7 +641,6 @@ hr {
 }
 
 .container .table td .b-icon {
-  cursor: pointer;
   margin: 0 8px;
   font-size: 20px;
   &.openArch-icon {

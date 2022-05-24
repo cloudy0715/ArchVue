@@ -45,6 +45,23 @@
             <DoughnutChart />
           </b-modal>
         </div>
+        <div>
+          <b-dropdown id="dropdown-structure" text="Structure" class="m-2">
+            <div>
+              <b-form-group v-slot="{ ariaDescribedby }">
+                <b-form-checkbox-group
+                  v-model="structureSelected"
+                  :options="structureOpt"
+                  :aria-describedby="ariaDescribedby"
+                  plain
+                  stacked
+                ></b-form-checkbox-group>
+              </b-form-group>
+            </div>
+            <b-dropdown-divider></b-dropdown-divider>
+            <b-button variant="primary" size="sm" id="onStructure" @click="onStructure">Check</b-button>
+          </b-dropdown>
+        </div>
         <b-button id="testStru">test</b-button>
       </div>
       <div class="mt-2 filter-result">
@@ -153,6 +170,16 @@ export default {
       archName: "",
       showFilterResult: false,
       loading: false,
+      structureSelected: [],
+      structureOpt: [
+        { text: "Account", value: "account_id" },
+        { text: "Region", value: "region" },
+        { text: "Application", value: "tag.Application" },
+        { text: "Department", value: "tag.Department" },
+        { text: "Environment", value: "tag.Environment" },
+        { text: "Owner", value: "tag.Owner" },
+        { text: "Project", value: "tag.Project" },
+      ],
       newTargetObj: {},
       filterOpt: ["id", "url", "parent", "type"],
       isRightSidebarOpen: false,
@@ -162,7 +189,7 @@ export default {
       ResourceAccountID: [],
       ResourceTag: [],
       filterOptions: [
-        { value: null, text: "Select an option", disabled: true },
+        { value: null, text: "Attribute name", disabled: true },
         { value: "account_id", text: "Account" },
         { value: "region", text: "Region" },
         {
@@ -182,11 +209,17 @@ export default {
       filterValText: null,
       filterResult: "",
       tag: {
-        Application: ["Processing", "web"],
+        Application: [
+          "Processing",
+          "web",
+          "Database",
+          "database",
+          "processing",
+        ],
         Department: ["Intership"],
         Environment: ["Prod", "Pre-Prod"],
-        Owner: ["Front-end", "Back-end"],
-        Project: ["Clouday1"],
+        Owner: ["Front-end", "Back-end", "DBA"],
+        Project: ["Clouday1", "Architecture"],
       },
       cyElements: null,
     };
@@ -227,12 +260,9 @@ export default {
       this.filterValText = this.filterResult;
       this.$refs.dropdown.hide(true);
     },
-    //     test(cy) {
-    //       // print all the ids of the nodes in the graph
-    // cy.nodes().forEach(function( ele ){
-    //  console.log( ele.id() );
-    // });
-    //     },
+    onStructure() {
+
+    },
     ListIncludeResourceType() {
       var set = [];
       for (var i = 0; i < this.nodes.length; i++) {
@@ -440,14 +470,13 @@ export default {
                   ? `Account (${id})`
                   : type == "region"
                   ? `Region (${id})`
+                  : node.data("id") == "Clouday1" 
+                  ? `${id} ( $20.7 USD/month )`
+                  : node.data("id") == "Architecture"
+                  ? `${id} ( $17.87 USD/month )`
                   : type.includes("tag.")
-                  ? `${type.replace(/^./, type[0].toUpperCase())} (${id})`
+                  ? `${type.replace(/^./, type[0].toUpperCase())} (${id}) `
                   : node.data("name");
-                // if (node.data("type") == "account_id")
-                //   return `Account (${node.data("id")})`;
-                // else if (node.data("type") == "region" || node.data("type").includes("tag."))
-                //   return node.data("id");
-                // else return node.data("name");
               },
               "background-position-x": "0",
               "background-position-y": "0",
@@ -504,7 +533,8 @@ export default {
           {
             selector: "node.notfilter",
             style: {
-              opacity: "0.5",
+              // opacity: "0.5",
+              color: "red",
             },
           },
           {
@@ -545,7 +575,7 @@ export default {
         ],
         ready: function () {
           cy = this;
-          
+
           // _this.cyElements = cy.nodes();
           // cy.add([
           //   {
@@ -621,21 +651,74 @@ export default {
             },
           },
         ]);
-// test-start
-
-          // cy.add(graphElements).layout(layout).run();
+        // test-start
+        if (_this.filterTypeText == null) {
+          _this.filterValText = "<empty-value>";
           cy.nodes().map(function (ele) {
             ["Processing", "web"].forEach((value) => {
               if (ele.data(`tag.Application`) == value) {
                 collection = ele.union(ele.successors());
-                collection.filter("node[^parent]").move({
-                  parent: value,
-                });
+                // collection.filter("node[^parent]").move({
+                //     parent: value
+                //   });
+                if (ele.parent().isOrphan() || ele.nodes("[^parent]")) {
+                  collection.filter("node[^parent]").move({
+                    parent: value,
+                  });
+                  // console.log(
+                  //   "if",
+                  //   ele.data("name"),
+                  //   ele.data("parent"),
+                  //   ele.filter("node[^parent]")
+                  // );
+                }
+                // else if (ele.filter("node[?parent]")) {
+                //   collection = ele.parent().union(ele.successors());
+                //   ele.nodes(`[id = ${value}]`).move({
+                //     parent: ele.parent().parent().id(),
+                //   });
+                //   collection.move({
+                //     parent: value,
+                //   });
+                //   console.log(
+                //     ele.data("name"),
+                //     ele.data("parent"),
+                //     ele.parent().parent().id()
+                //   );
+                // }
+                collection
+                  .difference(
+                    collection.filter(`node[tag.Application ='${value}']`)
+                  )
+                  .addClass("notfilter");
               }
             });
           });
-// test-end
+        } else {
+          let newCollection = cy.collection();
+          const array1 = ["Processing", "web"];
+          array1.forEach((value) => {
+            // console.log(value)
+            newCollection = newCollection.union(
+              cy.filter(`node[tag.Application = "${value}"]`)
+            );
+          });
+          newCollection.map(function (ele) {
+            if (!ele.isOrphan() && ele.parent().data("label") != "parent") {
+              ele.parent().move({
+                parent: ele.data("tag.Application"),
+              });
+            } else {
+              ele.move({
+                parent: ele.data("tag.Application"),
+              });
+            }
+            console.log(ele.data("name"), ele.data("tag.Application"));
+          });
+        }
+        // cy.add(graphElements).layout(layout).run();
 
+        // test-end
 
         // cy.nodes().map(function (ele) {
         //   ["Processing", "web"].forEach((value) => {
@@ -683,19 +766,26 @@ export default {
         cy.layout(layout).run();
       });
 
+      $("#onStructure").click(function () {
+        _this.structureSelected
+      })
+
       $("#resetFilter").click(function () {
-         cy.json({
-            elements: {
-              nodes: _this.nodes,
-              edges: _this.edges,
-            }
+        _this.filterType = null;
+        _this.filterResult = null;
+        _this.showFilterResult = false;
+        cy.json({
+          elements: {
+            nodes: _this.nodes,
+            edges: _this.edges,
+          },
         });
-        cy.nodes().removeClass("notfilter");
         // console.log(_this.nodes)
         // cy.elements().remove();
         // cy.add(clone).layout(layout).run();
         // cy.ready();
         cy.layout(layout).run();
+        cy.nodes().removeClass("notfilter", "highlight");
       });
 
       $("#filterApply").click(function () {
@@ -704,6 +794,7 @@ export default {
         cy.elements().remove();
         cy.add(clone);
         const query = `node[ ${_this.filterType} = '${_this.filterResult}']`;
+        const checkFilterType = cy.filter(`node[?${_this.filterType}]`);
         const queryRegion = cy.filter(function (element, i) {
           return element.isOrphan() && cy.nodes(query);
         });
@@ -711,14 +802,15 @@ export default {
         let filteredNodes = cy.nodes(query);
 
         if (_this.filterResult == null) {
-          const graphElements = cy
-            .filter(`node[?${_this.filterType}]`)
-            .union(cy.filter(`node[?${_this.filterType}]`).successors());
-          // cy.filter(`node[!${_this.filterType}]`).addClass("hidden")
-          // // Apply changes on graph
+          _this.filterValText = "<empty-value>";
+          const graphElements = checkFilterType
+            .merge(checkFilterType.outgoers())
+            .merge(checkFilterType.incomers())
+            .merge(checkFilterType.parent());
+
           cy.elements().remove();
-          // // console.log(graphElements)
-          cy.add(graphElements).layout(layout).run();
+          cy.add(graphElements);
+
           _this.filterVal.map(function (value) {
             cy.add({
               data: {
@@ -728,132 +820,41 @@ export default {
               },
             });
           });
-          // cy.add([
-          //   {
-          //     data: {
-          //       type: "tag.Application",
-          //       id: "Processing",
-          //       region: "us-west-1",
-          //       label: "parent",
-          //     },
-          //   },
-          //   {
-          //     data: {
-          //       type: "tag.Application",
-          //       id: "web",
-          //       region: "us-west-1",
-          //       label: "parent",
-          //     },
-          //   },
-          // ]);
-
-          // let querytest = cy.filter(function (element, i) {
-          // return element.isChild() && element.data(`${_this.filterType}`) == "Processing";
-          // });
-          // console.log(querytest)
-          // querytest.move({
-          //     parent: "Processing"
-          //   })
 
           let collection1 = cy.collection();
           cy.nodes().map(function (ele) {
             _this.filterVal.forEach((value) => {
               if (ele.data(`${_this.filterType}`) == value) {
-                collection1 = ele.union(ele.successors());
+                collection1 = ele.union(ele.parent());
                 collection1.filter("node[^parent]").move({
                   parent: value,
                 });
               }
             });
           });
-          const fitQueryElements = cy
-            .filter(`node[?${_this.filterType}]`)
-            .union(cy.filter(`node[?${_this.filterType}]`).parent());
-          // fitQueryElements.map(function (ele) {
-          //   console.log(ele.data("name"));
-          // });
-          cy.nodes("[?parent]")
-            .difference(fitQueryElements)
-            .addClass("notfilter");
-          // cy.nodes().map(function (ele) {
-          //   if (ele.data(`${_this.filterType}`) == "Processing") {
-          //     collection = ele.union(ele.successors());
-          //     collection.filter("node[^parent]").move({
-          //       parent: "Processing",
-          //     });
-          //     // collection.forEach(function(e){
-          //     //   console.log("collect", e.data("name"))
-          //     // })
-          //     console.log(ele.data("name"), ele.data("parent"));
-          //     console.log(collection.filter("node[parent]"));
-          //     console.log("=======");
-          //   } else if (ele.data(`${_this.filterType}`) == "web") {
-          //     ele.move({
-          //       parent: "web",
-          //     });
-          //   }
-          // });
+          const fitQueryElements = graphElements.filter(
+            `node[label != 'parent'][?${_this.filterType}]`
+          );
+          fitQueryElements.map(function (ele) {
+            console.log(ele.data("name"), ele.data(`${_this.filterType}`));
+          });
+          graphElements.difference(fitQueryElements).addClass("notfilter");
 
-          // collection1.isOrphan().move({
-          //       parent: "web",
-          //     });
-          // cy.nodes().forEach(function (ele) {
-          //   // console.log(ele.data("name"),ele.data(`${_this.filterType}`),ele.isOrphan())
-          //   if (ele.data(`${_this.filterType}`) == "Processing") {
-          //     // console.log(ele.union(ele.successors()));
-          //     ele.union(ele.successors()).isOrphan().move({
-          //       parent: "web",
-          //     });
-          //   }
-          // });
-
-          //  graphElements = cy.filter(function (element, i) {
-          //   return element.isOrphan() && cy.nodes(`${_this.filterType} = Processing`);
-          // });
-          // graphElements.filter(`node[${_this.filterType} = Processing]`)
-          // cy.nodes("[id = 'Processing']").restore()
-
-          //  querygraphElements.move({
-          //     parent: "Processing"
-          //   })
+          cy.layout(layout).run();
         } else {
           // I only want to successors of all Nodes, so I add only those and combine nodes and edges with union
-          const graphElements = filteredNodes.union(filteredNodes.successors());
-          const fitQueryElements = filteredNodes.union(filteredNodes.parent());
+          const graphElements = filteredNodes
+            .merge(filteredNodes.incomers())
+            .merge(filteredNodes.outgoers())
+            .merge(filteredNodes.filter(`node[?parent]`).parent());
 
-          //   // Apply changes on graph
+          // Apply changes on graph
           cy.elements().remove();
-          //   // console.log(graphElements)
           cy.add(graphElements).layout(layout).run();
-          cy.nodes().difference(fitQueryElements).addClass("notfilter");
+          graphElements
+            .difference(graphElements.filter(query))
+            .addClass("notfilter");
         }
-
-        // if (_this.filterResult == "us-west-2") {
-        //   cy.add([
-        //     {
-        //       data: {
-        //         type: "region",
-        //         id: "us-west-1",
-        //         region: "us-west-1",
-        //       },
-        //     },
-        //   ]);
-        //   queryRegion.move({
-        //     parent: "us-west-1",
-        //   });
-        //   const graphElements = filteredNodes.union(filteredNodes.successors());
-        //   // Apply changes on graph
-        //   cy.elements().remove();
-        //   // console.log(graphElements)
-        //   cy.add(graphElements).layout(layout).run();
-        // } else {
-        //   // I only want to successors of all Nodes, so I add only those and combine nodes and edges with union
-        //   const graphElements = cy.filter('node[?tag]').union(cy.filter('node[?tag]').successors());
-        //   // Apply changes on graph
-        //   cy.elements().remove();
-        //   // console.log(graphElements)
-        //   cy.add(graphElements).layout(layout).run();
-        // }
       });
 
       // let nodeList = cy.nodes().orphans();
@@ -906,12 +907,20 @@ export default {
         // cy.elements().removeClass("semitransp");
         sel.removeClass("highlight").outgoers().removeClass("highlight");
       });
-
+      cy.on("tap", function (event) {
+        if (event.target === cy) {
+          cy.elements().removeClass("clickstyle");
+          _this.isRightSidebarOpen = false;
+        }
+      });
       cy.on("tap", "node", function (e) {
         _this.isRightSidebarOpen = true;
-        // console.log(this.nodes+"nodes")
+        if (_this.isRightSidebarOpen) {
+        }
         cy.elements().removeClass("clickstyle");
+
         e.target.addClass("clickstyle").outgoers().addClass("clickstyle");
+        // console.log(this.nodes+"nodes")
 
         const filterOpt = ["id", "url", "parent", "type", "account_id"];
         this.targetNode = e.target.data();
@@ -951,19 +960,19 @@ export default {
 
     let _this = this;
     const dataURL =
-      "https://o6q2hh5nkpdfq4qmzh2s7vexqi0aovau.lambda-url.us-west-2.on.aws/";
-    // "https://3qgd653iwxosnngnisli7ybxrq0xqqgt.lambda-url.us-west-2.on.aws/";
+      // "https://o6q2hh5nkpdfq4qmzh2s7vexqi0aovau.lambda-url.us-west-2.on.aws/";
+      "https://3qgd653iwxosnngnisli7ybxrq0xqqgt.lambda-url.us-west-2.on.aws/";
     try {
       // this.loading = true
       await axios
         .get(dataURL, { params: { requestid: this.requestID } })
         .then((res) => {
           // console.log(JSON.parse(res.data.message))
-          // var JSONdata = JSON.parse(res.data.message)
-          // this.nodes = JSONdata[0];
-          // this.edges = JSONdata[1];
-          this.nodes = res.data[0];
-          this.edges = res.data[1];
+          var JSONdata = JSON.parse(res.data.message);
+          this.nodes = JSONdata[0];
+          this.edges = JSONdata[1];
+          // this.nodes = res.data[0];
+          // this.edges = res.data[1];
         })
         .catch((err) => {
           console.log(err);
