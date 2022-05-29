@@ -37,14 +37,14 @@
             </div>
           </b-dropdown-form>
         </b-dropdown>
-        <div class="mt-2">
+        <!-- <div class="mt-2">
           <b-button v-b-modal.modal-1
             ><b-icon icon="search"></b-icon> Cost</b-button
           >
           <b-modal id="modal-1" title="Cost">
             <DoughnutChart />
           </b-modal>
-        </div>
+        </div> -->
         <div>
           <b-dropdown id="dropdown-structure" text="Structure" class="m-2">
             <div>
@@ -59,10 +59,18 @@
               </b-form-group>
             </div>
             <b-dropdown-divider></b-dropdown-divider>
-            <b-button variant="primary" size="sm" id="onStructure" @click="onStructure">Check</b-button>
+            <b-button
+              variant="primary"
+              size="sm"
+              id="onStructure"
+              @click="onStructure"
+              >Check</b-button
+            >
           </b-dropdown>
         </div>
-        <b-button id="testStru">test</b-button>
+        <!-- <b-button id="testStru">test</b-button> -->
+        <!-- <b-button id="testMutiFilter">Test</b-button> -->
+        <b-button id="testMuti">Test</b-button>
       </div>
       <div class="mt-2 filter-result">
         <p v-show="showFilterResult">
@@ -260,9 +268,7 @@ export default {
       this.filterValText = this.filterResult;
       this.$refs.dropdown.hide(true);
     },
-    onStructure() {
-
-    },
+    onStructure() {},
     ListIncludeResourceType() {
       var set = [];
       for (var i = 0; i < this.nodes.length; i++) {
@@ -414,14 +420,15 @@ export default {
           {
             selector: "node",
             style: {
-              //   "background-color": "#11479e",
-              // "background-color": "#000",
-              // content: function(node) {
-              //   return node.data("type") + "\n" + node.data("name");
-              // },
               content: function (node) {
-                if (node.data("name")) return node.data("name");
-                else return node.data("id");
+                const type =
+                  node.data("type")[0].toUpperCase() +
+                  node.data("type").slice(1);
+                return node.data("label") == "parent"
+                  ? `${type} (${node.data("id")})`
+                  : node.data("name")
+                  ? `${node.data("name")}`
+                  : `${node.data("id")}`;
               },
               "text-valign": "top",
               "text-halign": "center",
@@ -454,6 +461,8 @@ export default {
                   ? "#000"
                   : type == "region"
                   ? "#11789a"
+                  : type == "structure"
+                  ? "green"
                   : type.includes("tag.")
                   ? "#f1860b"
                   : "#be0e8d";
@@ -470,12 +479,14 @@ export default {
                   ? `Account (${id})`
                   : type == "region"
                   ? `Region (${id})`
-                  : node.data("id") == "Clouday1" 
+                  : type == "structure"
+                  ? `${id}`
+                  : node.data("id") == "Clouday1"
                   ? `${id} ( $20.7 USD/month )`
                   : node.data("id") == "Architecture"
                   ? `${id} ( $17.87 USD/month )`
-                  : type.includes("tag.")
-                  ? `${type.replace(/^./, type[0].toUpperCase())} (${id}) `
+                  : type.includes("tag")
+                  ? `${type} ${id} `
                   : node.data("name");
               },
               "background-position-x": "0",
@@ -575,24 +586,6 @@ export default {
         ],
         ready: function () {
           cy = this;
-
-          // _this.cyElements = cy.nodes();
-          // cy.add([
-          //   {
-          //     data: {
-          //       type: "tag",
-          //       id: "Back-end",
-          //       label: "parent",
-          //     },
-          //   },
-          //   {
-          //     data: {
-          //       type: "tag.Owner",
-          //       id: "Front-end",
-          //       label: "parent",
-          //     },
-          //   },
-          // ]);
           cy.filter("node[label = 'parent']").data("isShow", false);
           // cy.nodes().move({
           //   parent: "Back-end"
@@ -602,34 +595,6 @@ export default {
           // cy.nodes("[id = 'Processing']").removeClass("hidden")
         },
       });
-
-      // function runLayout(fit, callBack) {
-      //   // step-1 position child nodes
-      //   var parentNodes = cy.nodes(':parent');
-      //   var orphansNodes = cy.nodes().orphans();
-      //   var grid_layout = orphansNodes.layout({
-      //     name: 'grid',
-      //       col: 1,
-      //       fit: fit
-      //   });
-      //   grid_layout.promiseOn('layoutstop').then(function(event) {
-      //     // step-2 position parent nodes
-      //     var dagre_layout = parentNodes.layout({
-      //       name: 'dagre',
-      //       rankDir: 'TB',
-      //       fit: fit
-      //     });
-      //     dagre_layout.promiseOn('layoutstop').then(function(event) {
-      //       if (callBack) {
-      //         callBack.call(cy, event);
-      //       }
-      //     });
-      //     dagre_layout.run();
-      //   });
-      //   grid_layout.run();
-
-      // }
-      // runLayout(true);
 
       const clone = cy.elements();
 
@@ -653,7 +618,6 @@ export default {
         ]);
         // test-start
         if (_this.filterTypeText == null) {
-          _this.filterValText = "<empty-value>";
           cy.nodes().map(function (ele) {
             ["Processing", "web"].forEach((value) => {
               if (ele.data(`tag.Application`) == value) {
@@ -766,14 +730,191 @@ export default {
         cy.layout(layout).run();
       });
 
+      let nowCollection = cy.collection();
       $("#onStructure").click(function () {
-        _this.structureSelected
-      })
+        // const nowCollection = cy.elements()
+        //  _this.structureSelected.length == 0 &&
+        if (_this.showFilterResult == false) {
+          cy.json({
+            elements: {
+              nodes: _this.nodes,
+              edges: _this.edges,
+            },
+          });
+          let structureNode = [];
+          let fitCollection = cy.collection();
+          // onFilterApply();
+          // cy.filter("node[type = 'structure']").remove();
+          _this.structureSelected.map(function (value) {
+            fitCollection = fitCollection.union(cy.filter(`node[?${value}]`));
+          });
+          fitCollection.map(function (ele) {
+            _this.structureSelected.map(function (value) {
+              if (structureNode.indexOf(ele.data(`${value}`)) == -1) {
+                structureNode.push(ele.data(`${value}`));
+              }
+            });
+            console.log(ele.data("name"), ele.data(_this.structureSelected[0]));
+          });
+          structureNode.map(function (value) {
+            cy.add({
+              data: {
+                type: "structure",
+                id: value,
+                label: "parent",
+              },
+            });
+          });
+          // cy.filter("node[type = 'structure']").addClass("hidden")
+          let collection = cy.collection();
+          if (_this.filterTypeText == null) {
+            cy.nodes().map(function (ele) {
+              structureNode.forEach((value) => {
+                if (ele.data(`${_this.structureSelected[0]}`) == value) {
+                  console.log(ele.data("name"));
+                  collection = ele.union(ele.parent());
+                  if (ele.parent().isOrphan() || ele.nodes("[^parent]")) {
+                    collection.filter("node[^parent]").move({
+                      parent: value,
+                    });
+                  }
+                  // collection
+                  //   .difference(
+                  //     collection.filter(`node[${_this.structureSelected[0]} ='${value}']`)
+                  //   ).addClass("notfilter");
+                }
+              });
+            });
+          } else {
+            let newCollection = cy.collection();
+            structureNode.forEach((value) => {
+              // console.log(value)
+              newCollection = newCollection.union(
+                cy.filter(`node["${_this.structureSelected[0]}"] = "${value}"]`)
+              );
+            });
+            newCollection.map(function (ele) {
+              if (!ele.isOrphan() && ele.parent().data("label") != "parent") {
+                ele.parent().move({
+                  parent: ele.data(`${_this.structureSelected[0]}`),
+                });
+              } else {
+                // ele.ancestors().move({
+                //   parent: ele.data(`${_this.structureSelected[0]}`),
+                // });
+                ele.move({
+                  parent: ele.data(`${_this.structureSelected[0]}`),
+                });
+              }
+              console.log(
+                ele.data("name"),
+                ele.data(`${_this.structureSelected[0]}`),
+                ele.data("parent")
+              );
+            });
+          }
+          // cy.layout(layout).run();
+        }
+        // else if (_this.structureSelected.length == 0 && _this.filterTypeText != null) {
+        //   nowCollection = cy.elements()
+        // }
+        else if (_this.structureSelected.length == 0) {
+          onFilterApply();
+          Filter();
+        } else {
+          Filter();
+          // if(_this.showFilterResult){
+          //    cy.elements().remove();
+          //   cy.add(nowCollection);
+
+          // }
+          console.log("select", _this.structureSelected);
+          let structureNode = [];
+          let fitCollection = cy.collection();
+          // onFilterApply();
+          // cy.filter("node[type = 'structure']").remove();
+          _this.structureSelected.map(function (value) {
+            fitCollection = fitCollection.union(cy.filter(`node[?${value}]`));
+          });
+          fitCollection.map(function (ele) {
+            _this.structureSelected.map(function (value) {
+              if (structureNode.indexOf(ele.data(`${value}`)) == -1) {
+                structureNode.push(ele.data(`${value}`));
+              }
+            });
+            console.log(ele.data("name"), ele.data(_this.structureSelected[0]));
+          });
+          structureNode.map(function (value) {
+            cy.add({
+              data: {
+                type: "structure",
+                id: value,
+                label: "parent",
+              },
+            });
+          });
+          // cy.filter("node[type = 'structure']").addClass("hidden")
+          let collection = cy.collection();
+          if (_this.filterTypeText == null) {
+            cy.nodes().map(function (ele) {
+              structureNode.forEach((value) => {
+                if (ele.data(`${_this.structureSelected[0]}`) == value) {
+                  console.log(ele.data("name"));
+                  collection = ele.union(ele.parent());
+                  if (ele.parent().isOrphan() || ele.nodes("[^parent]")) {
+                    collection.filter("node[^parent]").move({
+                      parent: value,
+                    });
+                  }
+                  // collection
+                  //   .difference(
+                  //     collection.filter(`node[${_this.structureSelected[0]} ='${value}']`)
+                  //   ).addClass("notfilter");
+                }
+              });
+            });
+          } else {
+            let newCollection = cy.collection();
+            structureNode.forEach((value) => {
+              // console.log(value)
+              newCollection = newCollection.union(
+                cy.filter(`node["${_this.structureSelected[0]}"] = "${value}"]`)
+              );
+            });
+            newCollection.map(function (ele) {
+              if (!ele.isOrphan() && ele.parent().data("label") != "parent") {
+                ele.parent().move({
+                  parent: ele.data(`${_this.structureSelected[0]}`),
+                });
+              } else {
+                // ele.ancestors().move({
+                //   parent: ele.data(`${_this.structureSelected[0]}`),
+                // });
+                ele.move({
+                  parent: ele.data(`${_this.structureSelected[0]}`),
+                });
+              }
+              console.log(
+                ele.data("name"),
+                ele.data(`${_this.structureSelected[0]}`),
+                ele.data("parent")
+              );
+            });
+          }
+          // if( cy.filter("node[type = 'structure']").isChildless() ){
+          //   cy.filter("node[type = 'structure']").addClass("hidden")
+          // } else {
+          //   cy.filter("node[type = 'structure']").removeClass("hidden")
+          // }
+        }
+        cy.layout(layout).run();
+      });
 
       $("#resetFilter").click(function () {
         _this.filterType = null;
         _this.filterResult = null;
         _this.showFilterResult = false;
+        _this.structureSelected = [];
         cy.json({
           elements: {
             nodes: _this.nodes,
@@ -789,8 +930,19 @@ export default {
       });
 
       $("#filterApply").click(function () {
+        nowCollection = cy.elements();
+        onFilterApply();
+        Filter();
+        cy.layout(layout).run();
+      });
+
+      function onFilterApply() {
+        _this.structureSelected = [];
         cy.nodes().removeClass("notfilter");
         _this.showFilterResult = true;
+      }
+
+      function Filter() {
         cy.elements().remove();
         cy.add(clone);
         const query = `node[ ${_this.filterType} = '${_this.filterResult}']`;
@@ -839,8 +991,6 @@ export default {
             console.log(ele.data("name"), ele.data(`${_this.filterType}`));
           });
           graphElements.difference(fitQueryElements).addClass("notfilter");
-
-          cy.layout(layout).run();
         } else {
           // I only want to successors of all Nodes, so I add only those and combine nodes and edges with union
           const graphElements = filteredNodes
@@ -855,8 +1005,369 @@ export default {
             .difference(graphElements.filter(query))
             .addClass("notfilter");
         }
+      }
+
+      $("#testMuti").click(function () {
+        const query = `node[tag.Application = 'Processing'][tag.Project = 'Clouday1']`;
+        const queryAry = ["?tag.Environment", "?tag.Application",];
+        const queryString = AddqueryString();
+
+        const queryNodes = cy.filter(queryString);
+
+        function AddqueryString() {
+          var string = "";
+          queryAry.map((value) => {
+            string += `[${value}]`;
+          });
+          return `node${string}`;
+        }
+
+        const queryNodes_col = cy.collection().union(queryNodes);
+        const graphElements = queryNodes_col
+          .merge(queryNodes_col.outgoers())
+          .merge(queryNodes_col.incomers())
+          .merge(queryNodes_col.parent());
+
+        cy.elements().remove();
+        cy.add(graphElements);
+
+        let structureNode = {};
+        queryNodes.map(function (ele) {
+          queryAry.map((value, i) => {
+            let queryType;
+            if (value.includes("?")) {
+              queryType = value.split("?")[1];
+              if (Object.keys(structureNode).indexOf(queryType) == -1) {
+                Object.assign(structureNode, { [`${queryType}`]: [] });
+              }
+              if (structureNode[queryType].indexOf(ele.data(queryType)) == -1) {
+                structureNode[queryType].push(ele.data(queryType));
+                // cy.add({
+                //   data: {
+                //     type: queryType,
+                //     id: ele.data(queryType),
+                //     label: "parent",
+                //   },
+                // });
+              }
+            } else {
+              queryType = value.split("=");
+              var queryVal = queryType[1].split("'")[1];
+              if (Object.keys(structureNode).indexOf(queryType[0]) == -1) {
+                Object.assign(structureNode, { [`${queryType[0]}`]: [] });
+              }
+              if (structureNode[queryType[0]].indexOf(queryVal) == -1) {
+                structureNode[queryType[0]].push(queryVal);
+                // cy.add({
+                //   data: {
+                //     type: queryType[0],
+                //     id: queryVal,
+                //     label: "parent",
+                //   },
+                // });
+              }
+            }
+          });
+        });
+
+        let newAryCollection = [];
+        function testAry() {
+          Object.entries(structureNode).forEach(([key, value]) => {
+            let newAry = [];
+            value.forEach((val) => {
+              var string = `${key}='${val}'`;
+              // console.log(`[${key}='${val}']`);
+              newAry.push(string);
+            });
+            newAryCollection.push(newAry);
+          });
+          // console.log("newAryCollection",newAryCollection)
+          return newAryCollection;
+        }
+
+        function spiltFilterString(val) {
+          var p_type = val.split("=");
+          var p_val = p_type[1].split("'")[1];
+          return [p_type[0], p_val];
+        }
+
+        function checkIsFilterNode2(val, val2) {
+          return cy.filter(`node[id=${spiltFilterString(val)[1]}]`).empty &&
+            cy.filter(`node[id=${spiltFilterString(val2)[1]}]`).empty
+            ? cy.add([
+                {
+                  data: {
+                    type: spiltFilterString(val)[0],
+                    id: `${spiltFilterString(val)[0]}:${
+                      spiltFilterString(val)[1]
+                    }`,
+                    label: "parent",
+                  },
+                },
+                {
+                  data: {
+                    type: spiltFilterString(val2)[0],
+                    id: `${spiltFilterString(val2)[0]}:${
+                      spiltFilterString(val2)[1]
+                    }`,
+                    label: "parent",
+                  },
+                },
+              ])
+            : cy.filter(`node[id=${spiltFilterString(val)[1]}]`).empty
+            ? cy.add({
+                data: {
+                  type: spiltFilterString(val)[0],
+                  id: `${spiltFilterString(val)[0]}:${
+                    spiltFilterString(val)[1]
+                  }`,
+                  label: "parent",
+                },
+              })
+            : cy.filter(`node[id=${spiltFilterString(val2)[1]}]`).empty
+            ? cy.add({
+                data: {
+                  type: spiltFilterString(val2)[0],
+                  id: `${spiltFilterString(val2)[0]}:${
+                    spiltFilterString(val2)[1]
+                  }`,
+                  label: "parent",
+                },
+              })
+            : console.log("has nodes");
+        }
+
+        function checkIsFilterNode(val, val2) {
+          if (cy.filter(`node[id=${spiltFilterString(val)[1]}]`).empty) {
+            cy.add({
+              data: {
+                type: spiltFilterString(val)[0],
+                id: `${spiltFilterString(val)[1]}`,
+                label: "parent",
+                text: `${spiltFilterString(val)[0]}:${
+                  spiltFilterString(val)[1]
+                }`,
+              },
+            });
+          }
+          if (
+            spiltFilterString(val2)[0] != "tag.Application" &&
+            cy.filter(`node[id=${spiltFilterString(val2)[1]}]`).empty
+          ) {
+            cy.add({
+              data: {
+                type: spiltFilterString(val2)[0],
+                id: `${spiltFilterString(val2)[1]}`,
+                label: "parent",
+                text: `${spiltFilterString(val2)[0]}:${
+                  spiltFilterString(val2)[1]
+                }`,
+              },
+            });
+          }
+          if (spiltFilterString(val)[0] == "tag.Application") {
+            cy.add({
+              data: {
+                type: spiltFilterString(val2)[0],
+                id: `${spiltFilterString(val2)[1]}`,
+                label: "parent",
+                text: `${spiltFilterString(val2)[0]}:${
+                  spiltFilterString(val2)[1]
+                }`,
+              },
+            });
+          }
+        }
+
+        newAryCollection = testAry();
+        console.log("newAryCollection", newAryCollection);
+        newAryCollection.map(function (value, index, array) {
+          if (newAryCollection.length > index + 1) {
+            value.forEach((val, i) => {
+              let queryNodesWithParent = cy.collection();
+              cy.add({
+                data: {
+                  type: spiltFilterString(val)[0],
+                  id: `${spiltFilterString(val)[1]}${i}`,
+                  label: "parent",
+                  text: `${spiltFilterString(val)[0]}:${
+                    spiltFilterString(val)[1]
+                  }`,
+                },
+              });
+              array[index + 1].forEach((val2, i2) => {
+                if (!queryNodes.filter(`node${val}${val2}`).empty()) {
+                  // checkIsFilterNode(val, val2);
+                  console.log("arr_2:", val, val2);
+
+                  cy.add({
+                    data: {
+                      type: spiltFilterString(val2)[0],
+                      id: `${spiltFilterString(val2)[1]}${i}`,
+                      label: "parent",
+                      text: `${spiltFilterString(val2)[0]}:${
+                        spiltFilterString(val2)[1]
+                      }`,
+                    },
+                  });
+                  queryNodes.filter(`node[${val}][${val2}]`).map((ele) => {
+                    queryNodesWithParent = queryNodesWithParent
+                      .union(ele)
+                      .union(ele.parent());
+                    console.log(ele.data("name"));
+                    queryNodesWithParent
+                      .filter("node[^parent][label!='parent']")
+                      .move({
+                        parent: `${spiltFilterString(val2)[1]}${i}`,
+                      });
+                    queryNodesWithParent = queryNodesWithParent.union(
+                      ele.ancestors()
+                    );
+                  });
+                } else {
+                  console.log(`${i}-${i2}: node${val}${val2}`);
+                  console.log("no fit");
+                  console.log("==============");
+                }
+              });
+              //  console.log("========");
+
+              //                   queryNodesWithParent.filter(`node[^parent][label='parent']`).map((ele) => {
+              //                     console.log(ele.data("name") || ele.data("text"));
+              //                   });
+
+              //                     console.log("========");
+
+              queryNodesWithParent
+                .filter(`node[^parent][label='parent']`)
+                .move({
+                  parent: `${spiltFilterString(val)[1]}${i}`,
+                });
+              // cy.filter(`node[id='${spiltFilterString(val)[1]}${2-1}']`).map((ele) => {
+              //       console.log("=====",ele.data("text"));
+
+              // })
+            });
+          }
+          cy.filter("node[label='parent']").map((ele) => {
+            if (ele.isChildless()) {
+              console.log("hidden", ele.data("text"));
+              ele.addClass("hidden");
+            }
+          });
+        });
+
+        console.log("structureNode", structureNode);
+
+        // cy.add([{
+        //   data: {
+        //     type: "tag.Application",
+        //     id: "Processing1",
+        //     label: "parent",
+        //   }
+        // },{
+        //   data: {
+        //     type: "tag.Application",
+        //     id: "Database1",
+        //     label: "parent",
+        //   }
+        // },{
+        //   data: {
+        //     type: "tag.Application",
+        //     id: "database1",
+        //     label: "parent",
+        //   }
+        // },{
+        //   data: {
+        //     type: "tag.Application",
+        //     id: "web1",
+        //     label: "parent",
+        //   }
+        // },{
+        //   data: {
+        //     type: "tag.Application",
+        //     id: "processing1",
+        //     label: "parent",
+        //   }
+        // }
+        // ]);
+
+        // console.log("structureNode",structureNode)
+        let collection1 = cy.collection();
+        const filterParent = cy.filter("node[label='parent']");
+        queryNodes.filter("node[^label]").map(function (nodes) {
+          filterParent.filter("node[type='tag.Environment']").map((eles) => {
+            filterParent.filter("node[type!='tag.Environment']").map((ele) => {
+              if (
+                nodes.data(eles.data("type")) == eles.data("id") &&
+                nodes.data(ele.data("type")) == ele.data("id")
+              ) {
+                collection1 = nodes.union(nodes.parent());
+                collection1.filter("node[^parent][^label]").move({
+                  parent: ele.data("id"),
+                });
+              }
+              if (nodes.data(ele.data("type")) == ele.data("id")) {
+                collection1 = nodes.union(nodes.parent());
+                collection1.filter("node[^parent][^label]").move({
+                  parent: ele.data("id"),
+                });
+              }
+            });
+          });
+        });
+
+        graphElements.difference(queryNodes).addClass("notfilter");
+
+        cy.layout(layout).run();
       });
 
+      //       [{type:"tag.Application"},{}].map(function (value) {
+      //             console.log(value)
+      //       });
+
+      //       const entries = Object.entries({"tag.Application":["aa","bb"],"tag.Project":["CC"]});
+
+      // console.log("entries",entries);
+
+      $("#testMutiFilter").click(function () {
+        testMutiFilter();
+      });
+      function testMutiFilter() {
+        console.log("click");
+        const query = `node[ tag.Application = 'Processing'][tag.Project = 'Clouday1']`;
+        const checkFilterType = cy.filter(`node[?tag.Application][?Project]`);
+        let filteredNodes = cy.nodes(query);
+        // filteredNodes.map(function(ele) {
+        //   console.log(ele.data("name"))
+        // })
+        const graphElements = checkFilterType
+          .merge(checkFilterType.outgoers())
+          .merge(checkFilterType.incomers())
+          .merge(checkFilterType.parent());
+
+        cy.elements().remove();
+        cy.add(graphElements);
+
+        let collection1 = cy.collection();
+        cy.nodes().map(function (ele) {
+          _this.filterVal.forEach((value) => {
+            if (ele.data(`${_this.filterType}`) == value) {
+              collection1 = ele.union(ele.parent());
+              collection1.filter("node[^parent]").move({
+                parent: value,
+              });
+            }
+          });
+        });
+        const fitQueryElements = graphElements.filter(
+          `node[label != 'parent'][?${_this.filterType}]`
+        );
+        fitQueryElements.map(function (ele) {
+          console.log(ele.data("name"), ele.data(`${_this.filterType}`));
+        });
+        graphElements.difference(fitQueryElements).addClass("notfilter");
+      }
       // let nodeList = cy.nodes().orphans();
       // const query2 = 'node[region = "us-west-2"]';
       // const query3 = 'node[region = "us-west-1"]';

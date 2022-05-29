@@ -47,13 +47,13 @@
               >
               <b-card header="IAM Permissions" class="card">
                 <b-card-text class="card-text">
-                  <textarea
+                  <!-- <textarea
                     class="textarea"
                     name=""
                     id=""
                     v-model="policy"
-                  ></textarea>
-                  <!-- <pre class="m-0">{{ policy }}</pre> -->
+                  ></textarea> -->
+                  <pre class="m-0" style="max-height: 200px">{{ policy }}</pre>
                 </b-card-text>
               </b-card>
             </div>
@@ -163,9 +163,9 @@
                   >
                     {{ val.region }}{{ index }}
                   </div> -->
-                    <div>
+                    <!-- <div>
                       <pre>{{ form }}</pre>
-                    </div>
+                    </div> -->
 
                     <!--  -->
                   </b-card-text>
@@ -353,96 +353,49 @@ export default {
           {
             Effect: "Allow",
             Action: [
-              "apigateway:GET",
-              "autoscaling:DescribeAutoScalingGroups",
-              "autoscaling:DescribeLaunchConfigurations",
-              "cloudfront:ListDistributions",
-              "cloudfront:ListTagsForResource",
-              "cloudtrail:DescribeTrails",
-              "cloudtrail:ListTags",
-              "cloudtrail:ListTrails",
-              "dynamodb:DescribeTable",
-              "dynamodb:ListTables",
-              "dynamodb:ListTagsOfResource",
-              "ec2:DescribeCustomerGateways",
               "ec2:DescribeInstances",
-              "ec2:DescribeInternetGateways",
-              "ec2:DescribeNatGateways",
-              "ec2:DescribeNetworkAcls",
-              "ec2:DescribeNetworkInterfaces",
-              "ec2:DescribeRouteTables",
-              "ec2:DescribeSecurityGroups",
-              "ec2:DescribeSubnets",
-              "ec2:DescribeTransitGateways",
-              "ec2:DescribeTransitGatewayAttachments",
-              "ec2:DescribeTransitGatewayRouteTables",
-              "ec2:DescribeVolumes",
-              "ec2:DescribeVpcs",
-              "ec2:DescribeVpcEndpoints",
-              "ec2:DescribeVpcEndpointConnections",
-              "ec2:DescribeVpnConnections",
-              "ec2:DescribeVpnGateways",
-              "ec2:DescribeVpcPeeringConnections",
-              "ec2:SearchTransitGatewayRoutes",
-              "ecs:DescribeClusters",
-              "ecs:DescribeServices",
-              "ecs:DescribeTasks",
-              "ecs:ListClusters",
-              "ecs:ListServices",
-              "ecs:ListTasks",
-              "eks:DescribeCluster",
-              "eks:ListClusters",
-              "elasticfilesystem:DescribeFileSystems",
-              "elasticache:DescribeCacheClusters",
-              "elasticache:DescribeCacheSubnetGroups",
-              "elasticloadbalancing:DescribeLoadBalancers",
-              "elasticloadbalancing:DescribeTags",
-              "elasticloadbalancing:DescribeTargetGroups",
-              "elasticloadbalancing:DescribeTargetHealth",
-              "emr:DescribeClusters",
-              "emr:ListClusters",
-              "es:DescribeElasticsearchDomains",
-              "es:ListDomainNames",
-              "es:ListTags",
-              "firehose:DescribeDeliveryStream",
-              "firehose:ListDeliveryStreams",
-              "firehose:ListTagsForDeliveryStream",
-              "glacier:DescribeVault",
-              "glacier:ListVaults",
-              "iam:ListAccountAliases",
-              "kinesis:DescribeStream",
-              "kinesis:ListShards",
-              "kinesis:ListStreams",
-              "kinesis:ListTagsForStream",
-              "lambda:ListFunctions",
-              "lambda:ListTags",
-              "network-firewall:ListFirewalls",
-              "network-firewall:DescribeFirewall",
-              "redshift:DescribeClusters",
-              "rds:DescribeDBClusters",
-              "rds:DescribeDBInstances",
-              "rds:ListTagsForResource",
-              "route53:ListHostedZones",
-              "route53:ListResourceRecordSets",
-              "route53:ListTagsForResource",
-              "s3:GetBucketLocation",
-              "s3:GetBucketNotification",
-              "s3:GetBucketPolicyStatus",
-              "s3:GetBucketTagging",
-              "s3:GetEncryptionConfiguration",
-              "s3:ListAllMyBuckets",
-              "sns:GetTopicAttributes",
-              "sns:ListTopics",
-              "sns:ListTagsForResource",
-              "sqs:GetQueueAttributes",
-              "sqs:ListQueues",
-              "sqs:ListQueueTags",
-              "states:DescribeActivity",
-              "states:ListActivities",
-              "states:DescribeStateMachine",
               "states:ListStateMachines",
-              "states:ListTagsForResource",
+              "states:DescribeStateMachine",
+              "wafv2:GetWebACLForResource",
+              "dynamodb:ListTables",
+              "logs:DescribeLogStreams",
+              "cognito-identity:ListIdentityPools",
+              "wafv2:GetWebACL",
+              "sns:ListTopics",
+              "s3:ListBucket",
+              "s3:GetBucketPolicy",
+              "ec2:DescribeInternetGateways",
+              "elasticloadbalancing:DescribeLoadBalancers",
+              "logs:CreateLogStream",
+              "ec2:DescribeNetworkInterfaces",
+              "ec2:DescribeAvailabilityZones",
+              "dynamodb:DescribeTable",
+              "logs:GetLogEvents",
+              "rds:DescribeDBInstances",
+              "apigateway:GET",
+              "ec2:DescribeNetworkAcls",
+              "ec2:DescribeRouteTables",
+              "wafv2:ListResourcesForWebACL",
+              "s3:GetBucketPublicAccessBlock",
+              "cognito-identity:DescribeIdentityPool",
+              "cloudtrail:LookupEvents",
+              "sqs:ListQueues",
+              "logs:DescribeLogGroups",
+              "sns:GetTopicAttributes",
+              "lambda:ListFunctions",
+              "dynamodb:Scan",
+              "ecr:GetAuthorizationToken",
+              "sqs:GetQueueAttributes",
+              "dynamodb:Query",
+              "ec2:DescribeSecurityGroups",
+              "s3:GetObject",
+              "s3:ListAllMyBuckets",
+              "elasticloadbalancing:DescribeTargetHealth",
+              "elasticloadbalancing:DescribeTargetGroups",
+              "ec2:DescribeVpcEndpoints",
               "sts:GetCallerIdentity",
+              "ec2:DescribeSubnets",
+              "lambda:GetPolicy",
             ],
             Resource: ["*"],
           },
@@ -477,9 +430,9 @@ export default {
       this.currentPage = 1;
     },
     updateArch(item, requestID) {
-          console.log(item);
+      console.log(item);
       axios
-        .post("http://44.237.111.172/update", { requestID: requestID})
+        .post("http://44.237.111.172/update", { requestID: requestID })
         .then((res) => {
           console.log(res);
         })
@@ -598,7 +551,6 @@ export default {
 <style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
 
 <style lang="scss" scoped>
-
 .org-description {
   margin-top: 50px;
 }
