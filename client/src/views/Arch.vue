@@ -70,7 +70,73 @@
         </div>
         <!-- <b-button id="testStru">test</b-button> -->
         <!-- <b-button id="testMutiFilter">Test</b-button> -->
-        <b-button id="testMuti">Test</b-button>
+        <div>
+          <b-dropdown
+            id="dropdown-structure"
+            text="Test"
+            class="m-2"
+            ref="dropdown"
+          >
+            <template #button-content>
+              <b-icon icon="filter-circle-fill" class="mr-1"></b-icon
+              ><span> Filter</span>
+            </template>
+            <b-dropdown-form
+              class="filter-panel"
+              @submit.stop.prevent="() => {}"
+            >
+              <div class="d-flex justify-content-between">
+                <small>Add an item to start your diagram.</small>
+                <!-- <b-icon
+                icon="trash"
+                class="delete-icon"
+                id="resetFilter"
+              >Remove all</b-icon> -->
+              </div>
+              <b-form-tags v-model="tagValue" no-outer-focus class="mb-2">
+                <template v-slot="{ tags, removeTag }">
+                  <div class="d-flex">
+                    <b-form-select
+                      v-model="filterType"
+                      :options="filterOptions"
+                    ></b-form-select>
+                    <b-form-select
+                      v-model="filterResult"
+                      :options="filterVal"
+                    ></b-form-select>
+                    <b-button
+                      @click="addTag()"
+                      size="sm"
+                      :disabled="addTagBtn_state"
+                    >
+                      add
+                    </b-button>
+                  </div>
+                  <div class="d-inline-block" style="font-size: 14px">
+                    <b-form-tag
+                      v-for="tag in tags"
+                      @remove="removeTag(tag)"
+                      :key="tag"
+                      :title="tag"
+                      variant="info"
+                      class="mr-1"
+                      >{{ tag }}</b-form-tag
+                    >
+                  </div>
+                </template>
+              </b-form-tags>
+              <b-dropdown-divider></b-dropdown-divider>
+              <div class="d-flex justify-content-end">
+                <b-button @click="removeAllTag" class="m-2"
+                  ><b-icon icon="trash"></b-icon>Remove all</b-button
+                >
+                <b-button variant="success" @click="onClick" id="filter_apply"
+                >Apply</b-button
+              >
+              </div>
+            </b-dropdown-form>
+          </b-dropdown>
+        </div>
       </div>
       <div class="mt-2 filter-result">
         <p v-show="showFilterResult">
@@ -100,6 +166,14 @@
               {{ index }}: {{ value }} 
           </li>
         </ul> -->
+         <!-- <tree-view 
+      @change-data="onChangeData"  
+      :data="newTargetObj" 
+      :options="{
+        modifiable: true,
+        link: false,
+        limitRenderDepth: false
+      }"/> -->
         <json-tree :data="newTargetObj"></json-tree>
       </div>
     </b-sidebar>
@@ -156,7 +230,9 @@ import axios from "axios";
 import JsonTree from "vue-json-tree";
 import Multiselect from "vue-multiselect";
 import "cytoscape-navigator/cytoscape.js-navigator.css";
-import DoughnutChart from "@/components/chart.vue";
+// import DoughnutChart from "@/components/chart.vue";
+// import ExpansableInput from '@/components/json-tree/ExpansableInput.vue'
+// import TreeView from '@/components/json-tree/TreeView.vue'
 
 var navigator = require("cytoscape-navigator");
 
@@ -167,7 +243,9 @@ export default {
   name: "cytoscape",
   components: {
     JsonTree,
-    DoughnutChart,
+    // DoughnutChart,
+    // ExpansableInput,
+    // TreeView,
     // Multiselect
   },
   data() {
@@ -211,6 +289,8 @@ export default {
           ],
         },
       ],
+      addTagBtn_state: true,
+      tagValue: [],
       filterType: null,
       filterVal: null,
       filterTypeText: null,
@@ -229,12 +309,12 @@ export default {
         Owner: ["Front-end", "Back-end", "DBA"],
         Project: ["Clouday1", "Architecture"],
       },
-      cyElements: null,
     };
   },
   watch: {
     filterType: function () {
       this.filterResult = null;
+      this.filterType == null ? null : (this.addTagBtn_state = false);
       // console.log("test");
       switch (this.filterType) {
         case "region":
@@ -262,13 +342,25 @@ export default {
     },
   },
   methods: {
+    onStructure() {},
+    onChangeData(data) {
+      console.log(data)
+      this.newTargetObj = data
+    },
     onClick() {
       // Close the menu and (by passing true) return focus to the toggle button
       this.filterTypeText = this.filterType;
       this.filterValText = this.filterResult;
       this.$refs.dropdown.hide(true);
     },
-    onStructure() {},
+    addTag() {
+      this.filterResult == undefined ? (this.filterResult = "<all>") : null;
+      this.tagValue.push(this.filterType + ": " + this.filterResult);
+      this.filterType = null;
+    },
+    removeAllTag() {
+      this.tagValue = [];
+    },
     ListIncludeResourceType() {
       var set = [];
       for (var i = 0; i < this.nodes.length; i++) {
@@ -486,7 +578,7 @@ export default {
                   : node.data("id") == "Architecture"
                   ? `${id} ( $17.87 USD/month )`
                   : type.includes("tag")
-                  ? `${type} ${id} `
+                  ? node.data("text")
                   : node.data("name");
               },
               "background-position-x": "0",
@@ -1007,95 +1099,131 @@ export default {
         }
       }
 
-      $("#testMuti").click(function () {
-        const query = `node[tag.Application = 'Processing'][tag.Project = 'Clouday1']`;
-        const queryAry = ["?tag.Environment", "?tag.Application",];
-        const queryString = AddqueryString();
+      $("#filter_apply").click(function () {
+        // const query = `node[tag.Application = 'Processing'][tag.Project = 'Clouday1']`;
+        let queryAry = [];
+        _this.tagValue.map((val, i) => {
+          if (val.split(": ")[1] == "<all>") {
+            val = `?${val.split(": ")[0]}`;
+            queryAry.push(val);
+          } else {
+            val = `${val.split(": ")[0]}='${val.split(": ")[1]}'`;
+            queryAry.push(val);
+          }
+        });
+        // queryAry = [?tag.Environment, tag.Application='...']
+        console.log("queryAry", queryAry);
 
-        const queryNodes = cy.filter(queryString);
+        cy.json({
+          elements: {
+            nodes: _this.nodes,
+            edges: _this.edges,
+          },
+        });
+        cy.nodes().removeClass("notfilter", "highlight");
 
         function AddqueryString() {
-          var string = "";
-          queryAry.map((value) => {
-            string += `[${value}]`;
-          });
-          return `node${string}`;
-        }
-
-        const queryNodes_col = cy.collection().union(queryNodes);
-        const graphElements = queryNodes_col
-          .merge(queryNodes_col.outgoers())
-          .merge(queryNodes_col.incomers())
-          .merge(queryNodes_col.parent());
-
-        cy.elements().remove();
-        cy.add(graphElements);
-
-        let structureNode = {};
-        queryNodes.map(function (ele) {
-          queryAry.map((value, i) => {
-            let queryType;
-            if (value.includes("?")) {
-              queryType = value.split("?")[1];
-              if (Object.keys(structureNode).indexOf(queryType) == -1) {
-                Object.assign(structureNode, { [`${queryType}`]: [] });
-              }
-              if (structureNode[queryType].indexOf(ele.data(queryType)) == -1) {
-                structureNode[queryType].push(ele.data(queryType));
-                // cy.add({
-                //   data: {
-                //     type: queryType,
-                //     id: ele.data(queryType),
-                //     label: "parent",
-                //   },
-                // });
-              }
-            } else {
-              queryType = value.split("=");
-              var queryVal = queryType[1].split("'")[1];
-              if (Object.keys(structureNode).indexOf(queryType[0]) == -1) {
-                Object.assign(structureNode, { [`${queryType[0]}`]: [] });
-              }
-              if (structureNode[queryType[0]].indexOf(queryVal) == -1) {
-                structureNode[queryType[0]].push(queryVal);
-                // cy.add({
-                //   data: {
-                //     type: queryType[0],
-                //     id: queryVal,
-                //     label: "parent",
-                //   },
-                // });
-              }
-            }
-          });
-        });
-
-        let newAryCollection = [];
-        function testAry() {
-          Object.entries(structureNode).forEach(([key, value]) => {
-            let newAry = [];
-            value.forEach((val) => {
-              var string = `${key}='${val}'`;
-              // console.log(`[${key}='${val}']`);
-              newAry.push(string);
+            var string = "";
+            queryAry.map((value) => {
+              string += `[${value}]`;
             });
-            newAryCollection.push(newAry);
+            return `node${string}`;
+            // `node[?tag.Environment][tag.Application='...']`
+          }
+
+        if (queryAry.length != 0) {
+          // const queryAry = ["?tag.Environment", "?tag.Application"];
+          const queryString = AddqueryString();
+
+          const queryNodes = cy.filter(queryString);
+
+          const queryNodes_col = cy.collection().union(queryNodes);
+          const graphElements = queryNodes_col
+            .merge(queryNodes_col.outgoers())
+            .merge(queryNodes_col.incomers())
+            .merge(queryNodes_col.parent());
+
+          cy.elements().remove();
+
+          // Add fit filter nodes
+          cy.add(graphElements);
+
+          let structureNode = {};
+          queryNodes.map(function (ele) {
+            queryAry.map((value, i) => {
+              let queryType;
+              if (value.includes("?")) {
+                queryType = value.split("?")[1];
+                if (Object.keys(structureNode).indexOf(queryType) == -1) {
+                  Object.assign(structureNode, { [`${queryType}`]: [] });
+                }
+                if (
+                  structureNode[queryType].indexOf(ele.data(queryType)) == -1
+                ) {
+                  structureNode[queryType].push(ele.data(queryType));
+                }
+              } else {
+                queryType = value.split("=");
+                var queryVal = queryType[1].split("'")[1];
+                if (Object.keys(structureNode).indexOf(queryType[0]) == -1) {
+                  Object.assign(structureNode, { [`${queryType[0]}`]: [] });
+                }
+                if (structureNode[queryType[0]].indexOf(queryVal) == -1) {
+                  structureNode[queryType[0]].push(queryVal);
+                }
+              }
+            });
           });
-          // console.log("newAryCollection",newAryCollection)
-          return newAryCollection;
-        }
+          // structureNode = { tag.Application: [..., ...], tag.Project: [..., ...] }
+          
+          let newAryCollection = [];
+          function testAry() {
+            Object.entries(structureNode).forEach(([key, value]) => {
+              let newAry = [];
+              value.forEach((val) => {
+                var string = `${key}='${val}'`;
+                // console.log(`[${key}='${val}']`);
+                newAry.push(string);
+              });
+              newAryCollection.push(newAry);
+            });
+            console.log("newAryCollection",newAryCollection)
+            return newAryCollection;
+            // newAryCollection = [["tag.Application='...'", "tag.Application='...'"], ["tag.Project='...'", "tag.Project='...'"]]
+          }
 
-        function spiltFilterString(val) {
-          var p_type = val.split("=");
-          var p_val = p_type[1].split("'")[1];
-          return [p_type[0], p_val];
-        }
+          function spiltFilterString(val) {
+            var p_type = val.split("=");
+            var p_val = p_type[1].split("'")[1];
+            return [p_type[0], p_val];
+            // [tag.Application, Clouday1]
+          }
 
-        function checkIsFilterNode2(val, val2) {
-          return cy.filter(`node[id=${spiltFilterString(val)[1]}]`).empty &&
-            cy.filter(`node[id=${spiltFilterString(val2)[1]}]`).empty
-            ? cy.add([
-                {
+          function checkIsFilterNode2(val, val2) {
+            return cy.filter(`node[id=${spiltFilterString(val)[1]}]`).empty &&
+              cy.filter(`node[id=${spiltFilterString(val2)[1]}]`).empty
+              ? cy.add([
+                  {
+                    data: {
+                      type: spiltFilterString(val)[0],
+                      id: `${spiltFilterString(val)[0]}:${
+                        spiltFilterString(val)[1]
+                      }`,
+                      label: "parent",
+                    },
+                  },
+                  {
+                    data: {
+                      type: spiltFilterString(val2)[0],
+                      id: `${spiltFilterString(val2)[0]}:${
+                        spiltFilterString(val2)[1]
+                      }`,
+                      label: "parent",
+                    },
+                  },
+                ])
+              : cy.filter(`node[id=${spiltFilterString(val)[1]}]`).empty
+              ? cy.add({
                   data: {
                     type: spiltFilterString(val)[0],
                     id: `${spiltFilterString(val)[0]}:${
@@ -1103,8 +1231,9 @@ export default {
                     }`,
                     label: "parent",
                   },
-                },
-                {
+                })
+              : cy.filter(`node[id=${spiltFilterString(val2)[1]}]`).empty
+              ? cy.add({
                   data: {
                     type: spiltFilterString(val2)[0],
                     id: `${spiltFilterString(val2)[0]}:${
@@ -1112,141 +1241,169 @@ export default {
                     }`,
                     label: "parent",
                   },
-                },
-              ])
-            : cy.filter(`node[id=${spiltFilterString(val)[1]}]`).empty
-            ? cy.add({
-                data: {
-                  type: spiltFilterString(val)[0],
-                  id: `${spiltFilterString(val)[0]}:${
-                    spiltFilterString(val)[1]
-                  }`,
-                  label: "parent",
-                },
-              })
-            : cy.filter(`node[id=${spiltFilterString(val2)[1]}]`).empty
-            ? cy.add({
-                data: {
-                  type: spiltFilterString(val2)[0],
-                  id: `${spiltFilterString(val2)[0]}:${
-                    spiltFilterString(val2)[1]
-                  }`,
-                  label: "parent",
-                },
-              })
-            : console.log("has nodes");
-        }
+                })
+              : console.log("has nodes");
+          }
 
-        function checkIsFilterNode(val, val2) {
-          if (cy.filter(`node[id=${spiltFilterString(val)[1]}]`).empty) {
-            cy.add({
-              data: {
-                type: spiltFilterString(val)[0],
-                id: `${spiltFilterString(val)[1]}`,
-                label: "parent",
-                text: `${spiltFilterString(val)[0]}:${
-                  spiltFilterString(val)[1]
-                }`,
-              },
-            });
-          }
-          if (
-            spiltFilterString(val2)[0] != "tag.Application" &&
-            cy.filter(`node[id=${spiltFilterString(val2)[1]}]`).empty
-          ) {
-            cy.add({
-              data: {
-                type: spiltFilterString(val2)[0],
-                id: `${spiltFilterString(val2)[1]}`,
-                label: "parent",
-                text: `${spiltFilterString(val2)[0]}:${
-                  spiltFilterString(val2)[1]
-                }`,
-              },
-            });
-          }
-          if (spiltFilterString(val)[0] == "tag.Application") {
-            cy.add({
-              data: {
-                type: spiltFilterString(val2)[0],
-                id: `${spiltFilterString(val2)[1]}`,
-                label: "parent",
-                text: `${spiltFilterString(val2)[0]}:${
-                  spiltFilterString(val2)[1]
-                }`,
-              },
-            });
-          }
-        }
-
-        newAryCollection = testAry();
-        console.log("newAryCollection", newAryCollection);
-        newAryCollection.map(function (value, index, array) {
-          if (newAryCollection.length > index + 1) {
-            value.forEach((val, i) => {
-              let queryNodesWithParent = cy.collection();
+          function checkIsFilterNode(val, val2) {
+            if (cy.filter(`node[id=${spiltFilterString(val)[1]}]`).empty) {
               cy.add({
                 data: {
                   type: spiltFilterString(val)[0],
-                  id: `${spiltFilterString(val)[1]}${i}`,
+                  id: `${spiltFilterString(val)[1]}`,
                   label: "parent",
                   text: `${spiltFilterString(val)[0]}:${
                     spiltFilterString(val)[1]
                   }`,
                 },
               });
-              array[index + 1].forEach((val2, i2) => {
-                if (!queryNodes.filter(`node${val}${val2}`).empty()) {
-                  // checkIsFilterNode(val, val2);
-                  console.log("arr_2:", val, val2);
+            }
+            if (
+              spiltFilterString(val2)[0] != "tag.Application" &&
+              cy.filter(`node[id=${spiltFilterString(val2)[1]}]`).empty
+            ) {
+              cy.add({
+                data: {
+                  type: spiltFilterString(val2)[0],
+                  id: `${spiltFilterString(val2)[1]}`,
+                  label: "parent",
+                  text: `${spiltFilterString(val2)[0]}:${
+                    spiltFilterString(val2)[1]
+                  }`,
+                },
+              });
+            }
+            if (spiltFilterString(val)[0] == "tag.Application") {
+              cy.add({
+                data: {
+                  type: spiltFilterString(val2)[0],
+                  id: `${spiltFilterString(val2)[1]}`,
+                  label: "parent",
+                  text: `${spiltFilterString(val2)[0]}:${
+                    spiltFilterString(val2)[1]
+                  }`,
+                },
+              });
+            }
+          }
 
+          newAryCollection = testAry();
+          if (queryAry.length > 1) {
+            newAryCollection.map(function (value, index, array) {
+              if (newAryCollection.length > index + 1) {
+                value.forEach((val, i) => {
+                  let queryNodesWithParent = cy.collection();
                   cy.add({
                     data: {
-                      type: spiltFilterString(val2)[0],
-                      id: `${spiltFilterString(val2)[1]}${i}`,
+                      type: spiltFilterString(val)[0],
+                      id: `${spiltFilterString(val)[1]}${i}`,
                       label: "parent",
-                      text: `${spiltFilterString(val2)[0]}:${
-                        spiltFilterString(val2)[1]
+                      text: `${spiltFilterString(val)[0]}:${
+                        spiltFilterString(val)[1]
                       }`,
                     },
                   });
-                  queryNodes.filter(`node[${val}][${val2}]`).map((ele) => {
-                    queryNodesWithParent = queryNodesWithParent
-                      .union(ele)
-                      .union(ele.parent());
-                    console.log(ele.data("name"));
-                    queryNodesWithParent
-                      .filter("node[^parent][label!='parent']")
-                      .move({
-                        parent: `${spiltFilterString(val2)[1]}${i}`,
+                  array[index + 1].forEach((val2, i2) => {
+                    if (!(queryNodes.filter(`node${val}${val2}`).empty())) {
+                      // checkIsFilterNode(val, val2);
+                      console.log("arr_2:", val, val2);
+                      cy.add({
+                        data: {
+                          type: spiltFilterString(val2)[0],
+                          id: `${spiltFilterString(val2)[1]}${i}${i2}`,
+                          label: "parent",
+                          text: `${spiltFilterString(val2)[0]}:${
+                            spiltFilterString(val2)[1]
+                          }`,
+                        },
                       });
-                    queryNodesWithParent = queryNodesWithParent.union(
-                      ele.ancestors()
-                    );
+                      queryNodes.filter(`node[${val}][${val2}]`).map((ele) => {
+                        // queryNodesWithParent = cy.collection();
+                        queryNodesWithParent = queryNodesWithParent
+                          .union(ele)
+                          .union(ele.parent());
+                        console.log(ele.data("name"));
+                        queryNodesWithParent
+                          .filter("node[^parent][label!='parent']")
+                          .move({
+                            parent: `${spiltFilterString(val2)[1]}${i}${i2}`,
+                          });
+                        queryNodesWithParent = queryNodesWithParent.union(
+                          ele.ancestors()
+                        );
+                      });
+                    } else {
+                      console.log(`${i}-${i2}: node${val}${val2}`);
+                      console.log("no fit");
+                      console.log("==============");
+                    }
                   });
-                } else {
-                  console.log(`${i}-${i2}: node${val}${val2}`);
-                  console.log("no fit");
-                  console.log("==============");
-                }
-              });
-              //  console.log("========");
+                  queryNodesWithParent
+                    .filter(`node[^parent][label='parent']`)
+                    .move({
+                      parent: `${spiltFilterString(val)[1]}${i}`,
+                    });
+                  queryNodesWithParent.filter("node[label='parent']").map(ele => console.log("queryNodesWithParent", ele.data("text")))
+                });
+              }
+            });
 
-              //                   queryNodesWithParent.filter(`node[^parent][label='parent']`).map((ele) => {
-              //                     console.log(ele.data("name") || ele.data("text"));
-              //                   });
+            console.log("structureNode", structureNode);
 
-              //                     console.log("========");
-
-              queryNodesWithParent
-                .filter(`node[^parent][label='parent']`)
-                .move({
+            // console.log("structureNode",structureNode)
+            // let collection1 = cy.collection();
+            // const filterParent = cy.filter("node[label='parent']");
+            // queryNodes.filter("node[^label]").map(function (nodes) {
+            //   filterParent
+            //     .filter("node[type='tag.Environment']")
+            //     .map((eles) => {
+            //       filterParent
+            //         .filter("node[type!='tag.Environment']")
+            //         .map((ele) => {
+            //           if (
+            //             nodes.data(eles.data("type")) == eles.data("id") &&
+            //             nodes.data(ele.data("type")) == ele.data("id")
+            //           ) {
+            //             collection1 = nodes.union(nodes.parent());
+            //             collection1.filter("node[^parent][^label]").move({
+            //               parent: ele.data("id"),
+            //             });
+            //           }
+            //           if (nodes.data(ele.data("type")) == ele.data("id")) {
+            //             collection1 = nodes.union(nodes.parent());
+            //             collection1.filter("node[^parent][^label]").move({
+            //               parent: ele.data("id"),
+            //             });
+            //           }
+            //         });
+            //     });
+            // });
+          } else {
+            newAryCollection.map(function (value, index, array) {
+              value.forEach((val, i) => {
+                let queryNodesWithParent = cy.collection();
+                console.log(`=======${val}======`);
+                cy.add({
+                  data: {
+                    type: spiltFilterString(val)[0],
+                    id: `${spiltFilterString(val)[1]}${i}`,
+                    label: "parent",
+                    text: `${spiltFilterString(val)[0]}:${
+                      spiltFilterString(val)[1]
+                    }`,
+                  },
+                });
+                queryNodesWithParent = queryNodesWithParent.union(queryNodes
+                  .filter(`node[${val}]`))
+                  .union(queryNodes.filter(`node[${value}]`).parent());
+                // queryNodesWithParent
+                //   .filter(`node[${val}]`).map((ele) => {
+                //   console.log("ele", spiltFilterString(val)[0] ,ele.data(spiltFilterString(val)[0]))
+                // })
+                queryNodesWithParent.filter("node[^parent][^label]").move({
                   parent: `${spiltFilterString(val)[1]}${i}`,
                 });
-              // cy.filter(`node[id='${spiltFilterString(val)[1]}${2-1}']`).map((ele) => {
-              //       console.log("=====",ele.data("text"));
-
-              // })
+              });
             });
           }
           cy.filter("node[label='parent']").map((ele) => {
@@ -1255,69 +1412,8 @@ export default {
               ele.addClass("hidden");
             }
           });
-        });
-
-        console.log("structureNode", structureNode);
-
-        // cy.add([{
-        //   data: {
-        //     type: "tag.Application",
-        //     id: "Processing1",
-        //     label: "parent",
-        //   }
-        // },{
-        //   data: {
-        //     type: "tag.Application",
-        //     id: "Database1",
-        //     label: "parent",
-        //   }
-        // },{
-        //   data: {
-        //     type: "tag.Application",
-        //     id: "database1",
-        //     label: "parent",
-        //   }
-        // },{
-        //   data: {
-        //     type: "tag.Application",
-        //     id: "web1",
-        //     label: "parent",
-        //   }
-        // },{
-        //   data: {
-        //     type: "tag.Application",
-        //     id: "processing1",
-        //     label: "parent",
-        //   }
-        // }
-        // ]);
-
-        // console.log("structureNode",structureNode)
-        let collection1 = cy.collection();
-        const filterParent = cy.filter("node[label='parent']");
-        queryNodes.filter("node[^label]").map(function (nodes) {
-          filterParent.filter("node[type='tag.Environment']").map((eles) => {
-            filterParent.filter("node[type!='tag.Environment']").map((ele) => {
-              if (
-                nodes.data(eles.data("type")) == eles.data("id") &&
-                nodes.data(ele.data("type")) == ele.data("id")
-              ) {
-                collection1 = nodes.union(nodes.parent());
-                collection1.filter("node[^parent][^label]").move({
-                  parent: ele.data("id"),
-                });
-              }
-              if (nodes.data(ele.data("type")) == ele.data("id")) {
-                collection1 = nodes.union(nodes.parent());
-                collection1.filter("node[^parent][^label]").move({
-                  parent: ele.data("id"),
-                });
-              }
-            });
-          });
-        });
-
-        graphElements.difference(queryNodes).addClass("notfilter");
+          graphElements.difference(queryNodes).addClass("notfilter");
+        }
 
         cy.layout(layout).run();
       });
