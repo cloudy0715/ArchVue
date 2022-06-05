@@ -234,14 +234,24 @@
           </b-col>
 
           <b-col sm="5" md="4" class="my-1">
-            <b-pagination
-              v-model="currentPage"
-              :total-rows="totalRows"
-              :per-page="perPage"
-              align="fill"
-              size="sm"
-              class="my-0"
-            ></b-pagination>
+            <b-row>
+              <b-button
+                variant="secondary"
+                @click="fetchData()"
+                size="sm"
+                class="mr-3"
+                ><b-icon icon="arrow-repeat" class="mr-1"></b-icon
+              ></b-button>
+
+              <b-pagination
+                v-model="currentPage"
+                :total-rows="totalRows"
+                :per-page="perPage"
+                align="fill"
+                size="sm"
+                class="my-0"
+              ></b-pagination>
+            </b-row>
           </b-col>
         </b-row>
 
@@ -258,6 +268,11 @@
           @filtered="onFiltered"
         >
           <template #empty>
+            <div class="text-center my-3">
+              <b-spinner variant="primary" label="Spinning"></b-spinner>
+            </div>
+          </template>
+          <template #table-busy>
             <div class="text-center my-3">
               <b-spinner variant="primary" label="Spinning"></b-spinner>
             </div>
@@ -516,34 +531,38 @@ export default {
         .catch((err) => {
           console.log(err);
         });
-      alert(JSON.stringify(this.form));
+      // alert(JSON.stringify(this.form));
       // Hide the modal manually
       this.$nextTick(() => {
         this.value = [];
         this.$bvModal.hide("add-account");
       });
     },
+    fetchData() {
+      this.isBusy = true;
+      const ddbURL =
+        "https://esrcf3ow2g7pkghwqstdk3z4hy0egoay.lambda-url.us-west-2.on.aws/";
+      const user = { user_id: this.form.user_id };
+      try {
+        // this.loading = true
+        axios
+          .get(ddbURL, { params: { user_id: "12345" } })
+          .then((res) => {
+            this.accountData = JSON.parse(res.data.message);
+            // Set the initial number of items
+            this.totalRows = this.accountData.length;
+            this.isBusy = false;
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      } catch (e) {
+        this.errors.push(e);
+      }
+    },
   },
   mounted() {
-    const ddbURL =
-      "https://esrcf3ow2g7pkghwqstdk3z4hy0egoay.lambda-url.us-west-2.on.aws/";
-    const user = { user_id: this.form.user_id };
-    try {
-      // this.loading = true
-      axios
-        .get(ddbURL, { params: { user_id: "12345" } })
-        .then((res) => {
-          this.accountData = JSON.parse(res.data.message);
-          // Set the initial number of items
-          this.totalRows = this.accountData.length;
-          this.isBusy = false;
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    } catch (e) {
-      this.errors.push(e);
-    }
+    this.fetchData();
   },
 };
 </script>
@@ -551,6 +570,13 @@ export default {
 <style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
 
 <style lang="scss" scoped>
+.about {
+  width: 100%;
+  .container {
+    padding: 20px 16px;
+  }
+}
+
 .org-description {
   margin-top: 50px;
 }

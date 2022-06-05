@@ -2,7 +2,7 @@
   <div id="box">
     <main :class="{ active: isLeftSidebarOpen }">
       <div class="d-flex">
-        <b-dropdown
+        <!-- <b-dropdown
           id="dropdown-form"
           ref="dropdown"
           variant="info"
@@ -36,7 +36,7 @@
               >
             </div>
           </b-dropdown-form>
-        </b-dropdown>
+        </b-dropdown> -->
         <!-- <div class="mt-2">
           <b-button v-b-modal.modal-1
             ><b-icon icon="search"></b-icon> Cost</b-button
@@ -45,7 +45,7 @@
             <DoughnutChart />
           </b-modal>
         </div> -->
-        <div>
+        <!-- <div>
           <b-dropdown id="dropdown-structure" text="Structure" class="m-2">
             <div>
               <b-form-group v-slot="{ ariaDescribedby }">
@@ -67,7 +67,7 @@
               >Check</b-button
             >
           </b-dropdown>
-        </div>
+        </div> -->
         <!-- <b-button id="testStru">test</b-button> -->
         <!-- <b-button id="testMutiFilter">Test</b-button> -->
         <div>
@@ -75,6 +75,7 @@
             id="dropdown-structure"
             text="Test"
             class="m-2"
+            variant="info"
             ref="dropdown"
           >
             <template #button-content>
@@ -127,12 +128,12 @@
               </b-form-tags>
               <b-dropdown-divider></b-dropdown-divider>
               <div class="d-flex justify-content-end">
-                <b-button @click="removeAllTag" class="m-2"
-                  ><b-icon icon="trash"></b-icon>Remove all</b-button
+                <b-button @click="removeAllTag" class="mr-2" variant="danger"
+                  ><b-icon icon="trash"></b-icon> Remove all</b-button
                 >
                 <b-button variant="success" @click="onClick" id="filter_apply"
-                >Apply</b-button
-              >
+                  >Apply</b-button
+                >
               </div>
             </b-dropdown-form>
           </b-dropdown>
@@ -160,21 +161,99 @@
       right
       width="30%"
     >
-      <div class="px-3 py-2">
+      <div class="px-3 py-2 info-content">
+        <div class="content-title d-flex">
+          <img :src="newTargetObj.Url" alt="" />
+          <div class="titleAndType">
+            <b-badge href="#" variant="info">{{ newTargetObj.Type }}</b-badge>
+            <!-- <input type="text" :disabled="checkInput('Name')" v-model="newTargetObj.Name" /> -->
+            <input
+              type="text"
+              :disabled="disabledInput"
+              v-model="newTargetObj.Name"
+            />
+          </div>
+          <b-icon
+            icon="pencil-square"
+            @click="testInput()"
+            class="h5 mx-2"
+          ></b-icon>
+        </div>
+        <hr />
+        <!-- <button @click="testInput()"></button> -->
+        <div
+          v-for="(value, index) in checkNewTargetObj(newTargetObj)[0]"
+          :key="value.id"
+          class="my-1"
+        >
+          <span class="info-content-title">{{ index }}: </span>
+          "
+          <!-- <input
+            type="text"
+            v-model="checkNewTargetObj(newTargetObj)[0][index]"
+            :disabled="checkInput(index)"
+          /> -->
+          <input
+            type="text"
+            v-model="checkNewTargetObj(newTargetObj)[0][index]"
+            :disabled="disabledInput"
+          />
+          "
+        </div>
+        <div
+          v-for="(value, index) in checkNewTargetObj(newTargetObj)[1]"
+          :key="value.id"
+        >
+          <span class="info-content-title">{{ index }}: </span>
+          <div
+            class="my-1"
+            v-for="(val, i) in checkNewTargetObj(newTargetObj)[1][index]"
+            :key="val.id"
+          >
+            <span class="info-content-subtitle">{{ i }}: </span>
+            "
+            <!-- <input
+              type="text"
+              v-model="checkNewTargetObj(newTargetObj)[1][index][i]"
+            /> -->
+            <input
+              type="text"
+              v-model="checkNewTargetObj(newTargetObj)[1][index][i]"
+              :disabled="disabledInput"
+            />
+            "
+            <!-- {{ val }} -->
+          </div>
+        </div>
+        <hr />
+
+        <p class="cost">
+          <b-icon icon="currency-dollar"></b-icon>
+          {{ newTargetObj.Cost_for_month }} USD / month
+        </p>
+        <b-button class="console-link"
+          ><a :href="newTargetObj.Console_url" target="_blank"
+            ><b-icon icon="box-arrow-up-right"></b-icon></a
+        ></b-button>
+
         <!-- <ul id="sidebar-menu">
           <li v-for="(value, index) in newTargetObj" :key="value.id" >
               {{ index }}: {{ value }} 
           </li>
         </ul> -->
-         <!-- <tree-view 
+        <!-- <tree-view 
       @change-data="onChangeData"  
       :data="newTargetObj" 
       :options="{
-        modifiable: true,
-        link: false,
+        modifiable: false,
+        link: true,
         limitRenderDepth: false
       }"/> -->
-        <json-tree :data="newTargetObj"></json-tree>
+        <!-- <pre>
+      {{newTargetObj}}
+      </pre> -->
+        <!-- <vueJsonTreeViewer ：value="newTargetObj" :options="options" /> -->
+        <!-- <json-tree :data="newTargetObj"></json-tree> -->
       </div>
     </b-sidebar>
     <div class="close-sidebar" v-show="!isLeftSidebarOpen">
@@ -231,8 +310,9 @@ import JsonTree from "vue-json-tree";
 import Multiselect from "vue-multiselect";
 import "cytoscape-navigator/cytoscape.js-navigator.css";
 // import DoughnutChart from "@/components/chart.vue";
-// import ExpansableInput from '@/components/json-tree/ExpansableInput.vue'
-// import TreeView from '@/components/json-tree/TreeView.vue'
+import ExpansableInput from "@/components/json-tree/ExpansableInput.vue";
+import TreeView from "@/components/json-tree/TreeView.vue";
+// import vueJsonTreeViewer from "https://cdn.skypack.dev/vue-json-tree-viewer";
 
 var navigator = require("cytoscape-navigator");
 
@@ -243,9 +323,10 @@ export default {
   name: "cytoscape",
   components: {
     JsonTree,
+    // vueJsonTreeViewer,
     // DoughnutChart,
-    // ExpansableInput,
-    // TreeView,
+    ExpansableInput,
+    TreeView,
     // Multiselect
   },
   data() {
@@ -273,11 +354,13 @@ export default {
       ResourceTypeResult: [],
       ResourceRegionResult: [],
       ResourceAccountID: [],
+      ResourceRGResult: [],
       ResourceTag: [],
       filterOptions: [
         { value: null, text: "Attribute name", disabled: true },
         { value: "account_id", text: "Account" },
         { value: "region", text: "Region" },
+        { value: "resourceGroup", text: "Resource-Group" },
         {
           label: "Tag",
           options: [
@@ -298,17 +381,23 @@ export default {
       filterResult: "",
       tag: {
         Application: [
-          "Processing",
-          "web",
-          "Database",
-          "database",
-          "processing",
+          // "Processing",
+          // "web",
+          // "Database",
+          // "database",
+          // "processing",
         ],
-        Department: ["Intership"],
-        Environment: ["Prod", "Pre-Prod"],
-        Owner: ["Front-end", "Back-end", "DBA"],
-        Project: ["Clouday1", "Architecture"],
+        // Department: ["Intership"],
+        // Environment: ["Prod", "Pre-Prod"],
+        // Owner: ["Front-end", "Back-end", "DBA"],
+        // Project: ["Clouday1", "Architecture"],
+        Department: [],
+        Environment: [],
+        Owner: [],
+        Project: [],
       },
+      disabledInput: true,
+      isEdit: false,
     };
   },
   watch: {
@@ -322,6 +411,9 @@ export default {
           break;
         case "account_id":
           this.filterVal = this.ResourceAccountID;
+          break;
+        case "resourceGroup":
+          this.filterVal = this.ResourceRGResult;
           break;
         case "tag.Application":
           this.filterVal = this.tag.Application;
@@ -343,9 +435,47 @@ export default {
   },
   methods: {
     onStructure() {},
-    onChangeData(data) {
-      console.log(data)
-      this.newTargetObj = data
+    testInput() {
+      if (this.disabledInput) {
+        this.disabledInput = false;
+      } else {
+        this.disabledInput = true;
+      }
+      // this.isEdit == false ? this.isEdit = true : null
+      // this.isEdit == true ? this.isEdit = false : null
+      // console.log(this.isEdit)
+    },
+    checkNewTargetObj(obj) {
+      const filterOpt = [
+        "Name",
+        "Cost_for_month",
+        "Url",
+        "Type",
+        "Console_url",
+      ];
+      var withoutArray = {};
+      var withArray = {};
+      for (var key in obj) {
+        // c+=1
+        if (obj[key] != "" && filterOpt.indexOf(key) == -1) {
+          if (typeof obj[key] != "object") {
+            withoutArray = Object.assign(withoutArray, { [key]: obj[key] });
+          } else if (
+            typeof obj[key] == "object" &&
+            obj[key].length != 0 &&
+            obj[key] != ""
+          ) {
+            withArray = Object.assign(withArray, { [key]: obj[key] });
+          }
+        }
+      }
+      return [withoutArray, withArray];
+    },
+    checkInput(title) {
+      const editable = ["Name", "Partition_key"];
+      if (editable.indexOf(title) == -1) {
+        return true;
+      }
     },
     onClick() {
       // Close the menu and (by passing true) return focus to the toggle button
@@ -357,27 +487,10 @@ export default {
       this.filterResult == undefined ? (this.filterResult = "<all>") : null;
       this.tagValue.push(this.filterType + ": " + this.filterResult);
       this.filterType = null;
+      this.filterVal = null;
     },
     removeAllTag() {
       this.tagValue = [];
-    },
-    ListIncludeResourceType() {
-      var set = [];
-      for (var i = 0; i < this.nodes.length; i++) {
-        if (this.nodes[i].data.type) {
-          set.push(this.nodes[i].data.type);
-        }
-      }
-      this.ResourceTypeResult = [...new Set(set)];
-    },
-    ListIncludeResourceRegion() {
-      var set = [];
-      for (var i = 0; i < this.nodes.length; i++) {
-        if (this.nodes[i].data.region) {
-          set.push(this.nodes[i].data.region);
-        }
-      }
-      this.ResourceRegionResult = [...new Set(set)];
     },
     ListIncludeAccountID() {
       var set = [];
@@ -387,16 +500,6 @@ export default {
         }
       }
       this.ResourceAccountID = [...new Set(set)];
-    },
-    ListIncludeTag() {
-      var set = [];
-      for (var i = 0; i < this.nodes.length; i++) {
-        if (this.nodes[i].data.tag) {
-          set.push(this.nodes[i].data.tag);
-        }
-      }
-      this.ResourceTag = [...new Set(set)];
-      // console.log(this.ResourceTag);
     },
     Addimg() {
       const img = [
@@ -439,6 +542,18 @@ export default {
         {
           title: "Account",
           url: "https://audio-json.s3.us-west-2.amazonaws.com/img/AWS-Cloud-Account_light-bg.png",
+        },
+        {
+          title: "RDS",
+          url: "https://audio-json.s3.us-west-2.amazonaws.com/img/Arch_Amazon-RDS_32.png",
+        },
+        {
+          title: "EC2",
+          url: "https://audio-json.s3.us-west-2.amazonaws.com/img/Arch_Amazon-EC2_32.png",
+        },
+        {
+          title: "Resource-Group",
+          url: "https://audio-json.s3.us-west-2.amazonaws.com/img/Amazon-Resourece-Groups-and-Tags.png",
         },
       ];
       for (var i = 0; i < this.nodes.length; i++) {
@@ -557,6 +672,8 @@ export default {
                   ? "green"
                   : type.includes("tag.")
                   ? "#f1860b"
+                  : type.includes("resourceGroup")
+                  ? "#2794a5"
                   : "#be0e8d";
               },
               "text-margin-x": 20,
@@ -567,18 +684,16 @@ export default {
               content: function (node) {
                 const type = node.data("type");
                 const id = node.data("id");
-                return type == "account_id"
+                return node.data("label") == "parent"
+                  ? `${node.data("text")} ( $${node.data(
+                      "cost_for_month"
+                    )} USD/month )`
+                  : type == "account_id"
                   ? `Account (${id})`
                   : type == "region"
                   ? `Region (${id})`
                   : type == "structure"
                   ? `${id}`
-                  : node.data("id") == "Clouday1"
-                  ? `${id} ( $20.7 USD/month )`
-                  : node.data("id") == "Architecture"
-                  ? `${id} ( $17.87 USD/month )`
-                  : type.includes("tag")
-                  ? node.data("text")
                   : node.data("name");
               },
               "background-position-x": "0",
@@ -1123,13 +1238,22 @@ export default {
         cy.nodes().removeClass("notfilter", "highlight");
 
         function AddqueryString() {
-            var string = "";
-            queryAry.map((value) => {
-              string += `[${value}]`;
+          var string = "";
+          if (queryAry.length > 1) {
+            queryAry.map((value, i) => {
+              if (i != queryAry.length - 1) {
+                string += `node[${value}],`;
+              } else {
+                string += `node[${value}]`;
+              }
             });
-            return `node${string}`;
-            // `node[?tag.Environment][tag.Application='...']`
+          } else {
+            string += `node[${queryAry[0]}]`;
           }
+          return string;
+          // return `node${string}`;
+          // `node[?tag.Environment][tag.Application='...']`
+        }
 
         if (queryAry.length != 0) {
           // const queryAry = ["?tag.Environment", "?tag.Application"];
@@ -1150,6 +1274,8 @@ export default {
 
           let structureNode = {};
           queryNodes.map(function (ele) {
+            ele.data("fitParent", []);
+            ele.data("fitQuery", "");
             queryAry.map((value, i) => {
               let queryType;
               if (value.includes("?")) {
@@ -1157,11 +1283,24 @@ export default {
                 if (Object.keys(structureNode).indexOf(queryType) == -1) {
                   Object.assign(structureNode, { [`${queryType}`]: [] });
                 }
-                if (
-                  structureNode[queryType].indexOf(ele.data(queryType)) == -1
-                ) {
-                  structureNode[queryType].push(ele.data(queryType));
+                if (queryType == "resourceGroup") {
+                  let RG_array = ele.data(queryType);
+                  // console.log("RG_array", RG_array);
+                  RG_array.forEach((val) => {
+                    if (structureNode[queryType].indexOf(val) == -1) {
+                      structureNode[queryType].push(val);
+                    }
+                  });
+                } else {
+                  if (
+                    structureNode[queryType].indexOf(ele.data(queryType)) == -1
+                  ) {
+                    structureNode[queryType].push(ele.data(queryType));
+                  }
                 }
+                // if (structureNode[queryType].indexOf(ele.data(queryType)) == -1) {
+                //   structureNode[queryType].push(ele.data(queryType));
+                // }
               } else {
                 queryType = value.split("=");
                 var queryVal = queryType[1].split("'")[1];
@@ -1175,7 +1314,7 @@ export default {
             });
           });
           // structureNode = { tag.Application: [..., ...], tag.Project: [..., ...] }
-          
+
           let newAryCollection = [];
           function testAry() {
             Object.entries(structureNode).forEach(([key, value]) => {
@@ -1187,7 +1326,7 @@ export default {
               });
               newAryCollection.push(newAry);
             });
-            console.log("newAryCollection",newAryCollection)
+            console.log("newAryCollection", newAryCollection);
             return newAryCollection;
             // newAryCollection = [["tag.Application='...'", "tag.Application='...'"], ["tag.Project='...'", "tag.Project='...'"]]
           }
@@ -1197,6 +1336,25 @@ export default {
             var p_val = p_type[1].split("'")[1];
             return [p_type[0], p_val];
             // [tag.Application, Clouday1]
+          }
+
+          function toUpperCase(val) {
+            return val.replace(/^./, val[0].toUpperCase());
+          }
+
+          function toString(array, val) {
+            // console.log("val", val)
+            let count = 0;
+            array.forEach((v) => {
+              if (v.toString() == val.toString()) {
+                // console.log(v.toString(), v.toString(),"==")
+                count += 1;
+              }
+            });
+            if (count == 0) {
+              array.push(val);
+            }
+            return array;
           }
 
           function checkIsFilterNode2(val, val2) {
@@ -1289,63 +1447,170 @@ export default {
 
           newAryCollection = testAry();
           if (queryAry.length > 1) {
+            let outfitParent = [];
+            let outfitfitQuery = [];
             newAryCollection.map(function (value, index, array) {
-              if (newAryCollection.length > index + 1) {
-                value.forEach((val, i) => {
-                  let queryNodesWithParent = cy.collection();
-                  cy.add({
-                    data: {
-                      type: spiltFilterString(val)[0],
-                      id: `${spiltFilterString(val)[1]}${i}`,
-                      label: "parent",
-                      text: `${spiltFilterString(val)[0]}:${
-                        spiltFilterString(val)[1]
-                      }`,
-                    },
-                  });
-                  array[index + 1].forEach((val2, i2) => {
-                    if (!(queryNodes.filter(`node${val}${val2}`).empty())) {
-                      // checkIsFilterNode(val, val2);
-                      console.log("arr_2:", val, val2);
-                      cy.add({
-                        data: {
-                          type: spiltFilterString(val2)[0],
-                          id: `${spiltFilterString(val2)[1]}${i}${i2}`,
-                          label: "parent",
-                          text: `${spiltFilterString(val2)[0]}:${
-                            spiltFilterString(val2)[1]
-                          }`,
-                        },
-                      });
-                      queryNodes.filter(`node[${val}][${val2}]`).map((ele) => {
-                        // queryNodesWithParent = cy.collection();
-                        queryNodesWithParent = queryNodesWithParent
-                          .union(ele)
-                          .union(ele.parent());
-                        console.log(ele.data("name"));
-                        queryNodesWithParent
-                          .filter("node[^parent][label!='parent']")
-                          .move({
-                            parent: `${spiltFilterString(val2)[1]}${i}${i2}`,
-                          });
-                        queryNodesWithParent = queryNodesWithParent.union(
-                          ele.ancestors()
-                        );
-                      });
-                    } else {
-                      console.log(`${i}-${i2}: node${val}${val2}`);
-                      console.log("no fit");
-                      console.log("==============");
-                    }
-                  });
-                  queryNodesWithParent
-                    .filter(`node[^parent][label='parent']`)
-                    .move({
-                      parent: `${spiltFilterString(val)[1]}${i}`,
-                    });
-                  queryNodesWithParent.filter("node[label='parent']").map(ele => console.log("queryNodesWithParent", ele.data("text")))
+              value.forEach((val, i) => {
+                let queryNodesWithParent = cy.collection();
+                console.log("===", val, "===");
+                cy.add({
+                  data: {
+                    type: spiltFilterString(val)[0],
+                    id: `${spiltFilterString(val)[1]}${i}`,
+                    label: "parent",
+                    text: `${toUpperCase(spiltFilterString(val)[0])}:${
+                      spiltFilterString(val)[1]
+                    }`,
+                  },
                 });
-              }
+
+                let fitQueryNodes;
+                if (spiltFilterString(val)[0] == "resourceGroup") {
+                  console.log("get resourceGroup");
+                  fitQueryNodes = queryNodes.filter(function (element) {
+                    return (
+                      element
+                        .data("resourceGroup")
+                        .indexOf(spiltFilterString(val)[1]) != -1
+                    );
+                  });
+                } else {
+                  fitQueryNodes = queryNodes.filter(`node[${val}]`);
+                }
+
+                queryNodesWithParent = fitQueryNodes.union(
+                  fitQueryNodes.parent().filter("node[^label]")
+                );
+                queryNodesWithParent.map((ele) => {
+                  console.log("----", ele.data("name"), "----");
+                  var fitParent = ele.data("fitParent");
+                  var string = ele.data("fitQuery");
+                  // console.log("testtest",ele.data("fitParent"))
+                  if (fitParent != undefined) {
+                    fitParent.push(`${spiltFilterString(val)[1]}${i}`);
+                    ele.data("fitParent", fitParent);
+                    string += `[${spiltFilterString(val)[0]}='${
+                      spiltFilterString(val)[1]
+                    }']`;
+                    ele.data("fitQuery", string);
+                  } else {
+                    ele.data("fitParent", [`${spiltFilterString(val)[1]}${i}`]);
+                    ele.data(
+                      "fitQuery",
+                      `[${spiltFilterString(val)[0]}='${
+                        spiltFilterString(val)[1]
+                      }']`
+                    );
+                  }
+                  console.log(
+                    ele.data("name"),
+                    "fitParent:",
+                    ele.data("fitParent")
+                  );
+                  console.log(
+                    ele.data("name"),
+                    "fitQuery:",
+                    ele.data("fitQuery")
+                  );
+                  outfitParent = toString(outfitParent, ele.data("fitParent"));
+                  // if (toString(outfitParent, ele.data("fitParent")) == false) {
+                  //   outfitParent.push(ele.data("fitParent"))
+                  // }
+                  if (outfitfitQuery.indexOf(ele.data("fitQuery")) == -1) {
+                    outfitfitQuery.push(ele.data("fitQuery"));
+                  }
+                });
+              });
+              // if (newAryCollection.length > index + 1) {
+              //   value.forEach((val, i) => {
+              //     let queryNodesWithParent = cy.collection();
+              //     cy.add({
+              //       data: {
+              //         type: spiltFilterString(val)[0],
+              //         id: `${spiltFilterString(val)[1]}${i}`,
+              //         label: "parent",
+              //         text: `${spiltFilterString(val)[0]}:${
+              //           spiltFilterString(val)[1]
+              //         }`,
+              //       },
+              //     });
+              //     array[index + 1].forEach((val2, i2) => {
+              //       if (!queryNodes.filter(`node${val}${val2}`).empty()) {
+              //         // checkIsFilterNode(val, val2);
+              //         console.log("arr_2:", val, val2);
+              //         cy.add({
+              //           data: {
+              //             type: spiltFilterString(val2)[0],
+              //             id: `${spiltFilterString(val2)[1]}${i}${i2}`,
+              //             label: "parent",
+              //             text: `${spiltFilterString(val2)[0]}:${
+              //               spiltFilterString(val2)[1]
+              //             }`,
+              //           },
+              //         });
+              //         queryNodes.filter(`node[${val}][${val2}]`).map((ele) => {
+              //           // queryNodesWithParent = cy.collection();
+              //           queryNodesWithParent = queryNodesWithParent
+              //             .union(ele)
+              //             .union(ele.parent());
+              //           console.log(ele.data("name"));
+              //           queryNodesWithParent
+              //             .filter("node[^parent][label!='parent']")
+              //             .move({
+              //               parent: `${spiltFilterString(val2)[1]}${i}${i2}`,
+              //             });
+              //           queryNodesWithParent = queryNodesWithParent.union(
+              //             ele.ancestors()
+              //           );
+              //         });
+              //       } else {
+              //         console.log(`${i}-${i2}: node${val}${val2}`);
+              //         console.log("no fit");
+              //         console.log("-----------");
+              //       }
+              //     });
+              //     queryNodesWithParent
+              //       .filter(`node[^parent][label='parent']`)
+              //       .move({
+              //         parent: `${spiltFilterString(val)[1]}${i}`,
+              //       });
+              //     queryNodesWithParent
+              //       .filter("node[label='parent']")
+              //       .map((ele) =>
+              //         console.log("queryNodesWithParent", ele.data("text"))
+              //       );
+              //   });
+              // }
+            });
+
+            // console.log("outfitParent",outfitParent)
+
+            outfitfitQuery = outfitfitQuery.sort((a, b) => {
+              return b.split(/\[|\]/).length - a.split(/\[|\]/).length;
+            });
+            console.log("outfitfitQuery", outfitfitQuery);
+
+            let pp = queryNodes;
+            outfitfitQuery.map((val) => {
+              const nodes = queryNodes.filter(`node${val}`);
+              let test = nodes.union(nodes.parent());
+              cy.add({
+                data: {
+                  type: spiltFilterString(val.split(/\[|\]/).reverse()[1])[0],
+                  id: val,
+                  label: "parent",
+                  text: `${
+                    spiltFilterString(val.split(/\[|\]/).reverse()[1])[0]
+                  }: ${spiltFilterString(val.split(/\[|\]/).reverse()[1])[1]}`,
+                  // text: spiltFilterString(val.split(/\[|\]/).reverse()[1])[0]+": "+spiltFilterString(val.split(/\[|\]/).reverse()[1])[1]
+                },
+              });
+              test.orphans().move({
+                parent: val,
+              });
+              pp = pp.difference(test);
+              console.log(pp);
+              
             });
 
             console.log("structureNode", structureNode);
@@ -1386,22 +1651,54 @@ export default {
                 cy.add({
                   data: {
                     type: spiltFilterString(val)[0],
-                    id: `${spiltFilterString(val)[1]}${i}`,
+                    id: `${spiltFilterString(val)[1]}`,
                     label: "parent",
-                    text: `${spiltFilterString(val)[0]}:${
+                    text: `${toUpperCase(spiltFilterString(val)[0])}:${
                       spiltFilterString(val)[1]
                     }`,
                   },
                 });
-                queryNodesWithParent = queryNodesWithParent.union(queryNodes
-                  .filter(`node[${val}]`))
-                  .union(queryNodes.filter(`node[${value}]`).parent());
-                // queryNodesWithParent
-                //   .filter(`node[${val}]`).map((ele) => {
-                //   console.log("ele", spiltFilterString(val)[0] ,ele.data(spiltFilterString(val)[0]))
-                // })
+
+                // queryNodesWithParent = queryNodesWithParent.union(queryNodes
+                //   .filter(`node[${val}]`))
+                //   .union(queryNodes.filter(`node[${value}]`).parent());
+
+                let fitQueryNodes;
+                if (spiltFilterString(val)[0] == "resourceGroup") {
+                  console.log("get resourceGroup");
+                  fitQueryNodes = queryNodes.filter(function (element) {
+                    console.log("RGG", element.data("tag.Application"));
+                    console.log(
+                      element
+                        .data("resourceGroup")
+                        .indexOf(spiltFilterString(val)[1])
+                    );
+                    return (
+                      element
+                        .data("resourceGroup")
+                        .indexOf(spiltFilterString(val)[1]) != -1
+                    );
+                  });
+                  queryNodesWithParent = fitQueryNodes.union(
+                    fitQueryNodes.parent()
+                  );
+                } else {
+                  queryNodesWithParent = queryNodesWithParent
+                    .union(queryNodes.filter(`node[${val}]`))
+                    .union(queryNodes.filter(`node[${val}]`).parent());
+                }
+
                 queryNodesWithParent.filter("node[^parent][^label]").move({
-                  parent: `${spiltFilterString(val)[1]}${i}`,
+                  parent: `${spiltFilterString(val)[1]}`,
+                });
+
+                queryNodesWithParent.filter(`node[${val}]`).map((ele) => {
+                  console.log(
+                    "ele",
+                    ele.data("name"),
+                    ele.data(spiltFilterString(val)[0]),
+                    ele.parent().data("text")
+                  );
                 });
               });
             });
@@ -1414,6 +1711,18 @@ export default {
           });
           graphElements.difference(queryNodes).addClass("notfilter");
         }
+        cy.filter("node[label='parent']").map((eles) => {
+          let totalCost = 0;
+          eles.children().map((ele) => {
+            totalCost += ele.data("cost_for_month");
+            // console.log("eleele", ele.data("name"), ele.data("cost_for_month"))
+          });
+          eles.data(
+            "cost_for_month",
+            Math.round((totalCost + Number.EPSILON) * 100) / 100
+          );
+          // console.log(eles.data("text") ,totalCost, eles.data("cost_for_month"))
+        });
 
         cy.layout(layout).run();
       });
@@ -1529,7 +1838,7 @@ export default {
         e.target.addClass("clickstyle").outgoers().addClass("clickstyle");
         // console.log(this.nodes+"nodes")
 
-        const filterOpt = ["id", "url", "parent", "type", "account_id"];
+        const filterOpt = ["id", "parent", "account_id"];
         this.targetNode = e.target.data();
         _this.newTargetObj = {};
         for (var i in this.targetNode) {
@@ -1576,18 +1885,29 @@ export default {
         .then((res) => {
           // console.log(JSON.parse(res.data.message))
           var JSONdata = JSON.parse(res.data.message);
-          this.nodes = JSONdata[0];
-          this.edges = JSONdata[1];
+          this.nodes = JSONdata[1];
+          this.edges = JSONdata[2];
+
+          this.tag.Department = JSONdata[0][0].tag.Department;
+          this.tag.Environment = JSONdata[0][0].tag.Environment;
+          this.tag.Owner = JSONdata[0][0].tag.Owner;
+          this.tag.Project = JSONdata[0][0].tag.Project;
+          this.tag.Application = JSONdata[0][0].tag.Application;
+          this.ResourceRegionResult = JSONdata[0][0].region;
+          this.ResourceRGResult = JSONdata[0][0].resourceGroup;
+          this.ResourceTypeResult = JSONdata[0][0].type;
           // this.nodes = res.data[0];
           // this.edges = res.data[1];
         })
         .catch((err) => {
           console.log(err);
         });
-      this.ListIncludeResourceType();
-      this.ListIncludeResourceRegion();
+      // this.ListIncludeResourceType();
+      // this.ListIncludeResourceRegion();
       this.ListIncludeAccountID();
-      this.ListIncludeTag();
+      // this.ListIncludeRG();
+      console.log("this.ResourceAccountID", this.ResourceAccountID);
+      // this.ListIncludeTag();
       this.Addimg();
       // console.log(this.nodes)
       await this.createCytoscape(_this);
@@ -1602,11 +1922,18 @@ export default {
 .navbar {
   display: none;
 }
+.page-wrapper {
+  display: none;
+}
+.router-view {
+  margin: 0;
+  padding: 0;
+}
 
 #cy {
-  max-width: 100%;
+  // max-width: 100%;
   /* height: 75%; */
-  height: 450px;
+  height: 485px;
   border: 2px solid #a1a1a1;
   border-radius: 5px;
   color: #cccccc;
@@ -1629,6 +1956,7 @@ main {
   transition: all 0.3s ease;
   margin-left: 50px;
   padding: 8px 8px 0;
+  margin-bottom: 0px;
   &.active {
     margin-left: 250px;
   }
@@ -1686,6 +2014,75 @@ main {
 }
 
 .sidebar-title {
-  color: rgba(255, 255, 255, 0.228);
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.388);
+  word-wrap: break-word;
+  font-weight: bold;
+}
+
+.info-content {
+  font-size: 13px;
+  .info-content-title {
+    font-weight: bold;
+    color: rgb(98, 175, 205);
+  }
+  .info-content-subtitle {
+    font-weight: bold;
+    // color: rgb(223, 170, 38);
+    color: rgb(215, 161, 91);
+  }
+  input {
+    max-width: 150px;
+    color: #639c5a;
+    &[disabled] {
+      color: #939794;
+    }
+  }
+  & > div > div {
+    margin-left: 15px;
+  }
+  .cost {
+    font-size: 16px;
+    color: #df7979;
+  }
+}
+
+.content-title {
+  align-items: center;
+  margin-bottom: 0.5rem;
+  img {
+    border-radius: 15%;
+    width: 40px;
+    height: 40px;
+  }
+  .titleAndType input {
+    max-width: 100%;
+    font-weight: bold;
+    color: #595a5a;
+    font-size: 18px;
+    margin: 4px 0;
+    display: block;
+    border: 0;
+    background: transparent;
+  }
+}
+
+.console-link {
+  position: fixed;
+  right: 10px;
+  bottom: 20px;
+  border: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgb(8, 118, 165);
+  .b-icon {
+    font-size: 100%;
+    vertical-align: text-top;
+    color: white;
+  }
+  &:hover {
+    background: #db9a47;
+  }
 }
 </style>

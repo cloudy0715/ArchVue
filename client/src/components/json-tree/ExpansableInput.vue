@@ -5,7 +5,7 @@
     contenteditable
     v-bind="$attrs"
     @input="e => $emit('update:modelValue', e.target.innerText)">
-<div>
+</div>
 </template>
 
 <script>

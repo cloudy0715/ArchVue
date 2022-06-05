@@ -6,6 +6,7 @@ import jQuery from 'jquery'
 import './../node_modules/bulma/css/bulma.css';
 import '@fortawesome/fontawesome-free/js/all'
 
+
 window.$ = window.jQuery = jQuery
 
 // cytoscape
@@ -24,6 +25,12 @@ import 'bootstrap-vue/dist/bootstrap-vue.css'
 
 Vue.use(BootstrapVue)
 Vue.use(BootstrapVueIcons)
+
+// SideBarMenu
+// import VueSidebarMenu from 'vue-sidebar-menu'
+// import 'vue-sidebar-menu/dist/vue-sidebar-menu.css'
+// Vue.use(VueSidebarMenu)
+
 
 // Import the Auth0 configuration
 import { domain, clientId, audience } from "../auth_config.json";

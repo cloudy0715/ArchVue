@@ -25,7 +25,7 @@
 
 
 <script>
-import ExpansableInput from './ExpansableInput'
+import ExpansableInput from './ExpansableInput.vue'
 
 const isNull = el => el === null
 const isString = el => typeof el === 'string'
